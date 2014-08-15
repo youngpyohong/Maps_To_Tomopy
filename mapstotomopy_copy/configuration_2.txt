@@ -1,0 +1,59 @@
+#name of the folder
+/Users/youngpyohong/Documents/Work/2014-1/glassrod_W_Au/h5files/tomodata/2xfm/
+#name of the file
+2xfm
+#start number
+172
+#end number
+190
+#element(number)
+7
+#save sinogram
+no
+#reconstruct type (mlem, art, gridrec)
+gridrec
+
+element list:
+      [0:'SRcurrent',
+       1:'us_ic',
+       2:'ds_ic',
+       3:'abs_ic',
+       4:'abs_cfg',
+       5:'H_dpc_cfg',
+       6:'V_dpc_cfg',
+       7:'dia1_dpc_cfg',
+       8:'dia2_dpc_cfg',
+       9:'H_dpc_norm',
+       10:'V_dpc_norm',
+       11:'phase',
+       12:'ELT1',
+       13:'ERT1',
+       14:'ICR1',
+       15:'OCR1',
+       16:'deadT',
+       17:'x_coord',
+       18:'y_coord',
+       19:'Al',
+       20:'Si',
+       21:'P',
+       22:'S',
+       23:'Cl',
+       24:'Ar',
+       25:'K',
+       26:'Ca',
+       27:'Ti',
+       28:'Cr',
+       29:'Mn',
+       30:'Fe',
+       31:'Co',
+       32:'Ni',
+       33:'Cu',
+       34:'Zn',
+       35:'Ag_L',
+       36:'W_M',
+       37:'Au_M',
+       38:'s_i',
+       39:'s_e',
+       40:'s_a',
+       41:'TFY',
+       42:'Bkgnd'], 
