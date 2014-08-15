@@ -11,10 +11,10 @@ install_requires = [
 
 # Main setup configuration.
 setup(
-      name='mapstotomopy',
+      name='Maps_To_Tomopy',
       version=open('VERSION').read().strip(),
       
-      packages = ['mapstotomopy'],
+      packages = ['Maps_To_Tomopy'],
       include_package_data = True,
       
       author='Young Hong',

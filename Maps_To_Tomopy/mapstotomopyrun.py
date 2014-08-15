@@ -2,15 +2,15 @@
 import tomopy
 import numpy as np
 from scipy import *
-import mapstotomopy
-import mapstotomopy.readwritetxt
-from mapstotomopy.readwritetxt import readtxt
-import mapstotomopy.sinogram
-from mapstotomopy.sinogram import sinogram
+import Maps_To_Tomopy
+import Maps_To_Tomopy.readwritetxt
+from Maps_To_Tomopy.readwritetxt import readtxt
+import Maps_To_Tomopy.sinogram
+from Maps_To_Tomopy.sinogram import sinogram
 from PIL import Image
 import os
-import mapstotomopy.xtomo_io_f
-from mapstotomopy.xtomo_io_f import xtomo_reader_f, xtomo_writer_f
+import Maps_To_Tomopy.xtomo_io_f
+from Maps_To_Tomopy.xtomo_io_f import xtomo_reader_f, xtomo_writer_f
 import sys
 
 # Read HDF5 file.
