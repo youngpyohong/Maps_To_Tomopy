@@ -9,7 +9,7 @@
 #element(number)
 7
 #save sinogram
-no
+yes
 #reconstruct type (mlem, art, gridrec)
 gridrec
 

@@ -3,6 +3,8 @@ import numpy as np
 from scipy import misc
 import shutil
 import os
+from os.path import isfile, join
+import string
 import h5py
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -10,6 +12,124 @@ from pylab import *
 from pylab import *
 import readwritetxt
 from readwritetxt import readtxt
+
+def xtomo_reader_gui(onlyfiles):
+    projections=len(onlyfiles)
+    f=h5py.File(onlyfiles[0])
+    print f['exchange']['images']
+    num_channels, num_y, num_x = f['exchange']['images'].shape
+    theta = zeros(projections)
+    channelname=f['exchange']['images_names']
+    data = zeros([num_channels, projections, num_y, num_x-2])
+    
+    for i in arange(projections):
+
+          f = h5py.File(onlyfiles[i],"r")
+          hdfdata = f["/exchange/images"]
+
+          temp=f["MAPS"]["extra_pvs_as_csv"][99]
+          theta[i]=temp[temp.rfind(",")+2:]
+          
+          for j in arange(num_channels):
+                data[j,i,:,:]=hdfdata[j,:,:-2]
+    # Start reading data.
+    #f = h5py.File(file_name, "r")
+    #hdfdata = f["/exchange_2/data"]
+
+    f.close()
+    
+    return data, theta, channelname
+
+def xtomo_reader_config():
+    try:
+        file_name_f,projections_start,projections_end,exclude_numbers,dummy1,dummy2,dummy3=readtxt()
+        print "reading txt"
+    except IOError:
+        print "reading script"
+    print file_name_f
+    if file_name_f[-1]=='/':
+        ## open all the files from folder
+        file_name_array = [ f for f in os.listdir(file_name_f) if isfile(join(file_name_f,f))]
+        file_name_array = [ f for f in os.listdir(file_name_f) if string.find(f,"h5")!=-1]
+        file_names=list()
+
+        for j in arange(len(file_name_array)):
+            for k in arange(len(exclude_numbers)):
+
+                if string.find(file_name_array[j],str(exclude_numbers[k]))==-1:
+
+                    file_names.append(file_name_array[j])
+
+                            
+
+        f=h5py.File(file_name_f+file_names[0])
+
+        projections=len(file_names)
+        
+        num_channels, num_y, num_x = f['exchange']['images'].shape
+        theta = zeros(projections)
+        channelname=f['exchange']['images_names']
+        data = zeros([num_channels, projections, num_y, num_x-2])
+
+        for i in arange(len(file_names)):
+
+          ### theta
+
+
+          ### data
+            
+            f = h5py.File(file_name_f+file_names[i],"r")
+            hdfdata = f["/exchange/images"]
+
+            temp=f["MAPS"]["extra_pvs_as_csv"][99]
+            theta[i]=temp[temp.rfind(",")+2:]
+          
+            for j in arange(num_channels):
+                data[j,i,:,:]=hdfdata[j,:,:-2]
+        
+    else:
+        projections_orig=int(projections_end)-int(projections_start)+1
+        projections=int(projections_end)-int(projections_start)-len(exclude_numbers)+1
+        projection_numbers=zeros(projections,int)
+        k=0
+        print projections_start, exclude_numbers
+
+        for j in arange(projections_orig):
+            if int(projections_start)+j not in exclude_numbers:
+                projection_numbers[k]=int(projections_start)+j
+                k=k+1
+                
+        f=h5py.File(file_name_f + "_0" + str(projection_numbers[0])+ ".h5")
+        num_channels, num_y, num_x = f['exchange']['images'].shape
+        theta = zeros(projections)
+        channelname=f['exchange']['images_names']
+        data = zeros([num_channels, projections, num_y, num_x-2])
+    
+        for i in arange(projections):
+
+          ### theta
+
+
+          ### data
+              
+              file_name = file_name_f + "_0" + str(projection_numbers[i])+".h5"
+              file_name = os.path.abspath(file_name)
+              f = h5py.File(file_name,"r")
+              hdfdata = f["/exchange/images"]
+
+              temp=f["MAPS"]["extra_pvs_as_csv"][99]
+              theta[i]=temp[temp.rfind(",")+2:]
+          
+              for j in arange(num_channels):
+                    data[j,i,:,:]=hdfdata[j,:,:-2]
+    # Start reading data.
+    #f = h5py.File(file_name, "r")
+    #hdfdata = f["/exchange_2/data"]
+
+    f.close()
+    
+    return data, theta, channelname
+    
 
 def xtomo_reader_f(file_name_f,
                  projections_start=None,
@@ -88,7 +208,7 @@ def xtomo_reader_f(file_name_f,
     # Start working on checks and stuff.
     print "working fine"
     try:
-      file_name_f,projections_start,projections_end,elemen,dummy,dummy2=readtxt()
+      file_name_f,projections_start,projections_end,exclude_numbers,elemen,dummy,dummy2=readtxt()
       print "reading txt"
     except IOError:
       print "reading script"
@@ -97,7 +217,6 @@ def xtomo_reader_f(file_name_f,
     projections = projections_end-projections_start+1
     global f
     f=h5py.File(file_name_f + "_0" + str(projections_start) + ".h5")
-    print f.filename
     print f['exchange']['images']
     num_channels, num_y, num_x = f['exchange']['images'].shape
     theta = zeros(projections)

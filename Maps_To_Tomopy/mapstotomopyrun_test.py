@@ -28,17 +28,16 @@ except IndexError:
 try:
       file_name_f,projections_start,projections_end,exclude_numbers,element,reconstructiontype,sinogramsave=readtxt()
       print "reading txt file"
-      data_orig,theta,channelname=xtomo_reader_f(file_name_f,projections_start=projections_start,
-                                                 projections_end=projections_end)
+      data_orig,theta,channelname=xtomo_reader_config()
 except IOError:
       data_orig,theta,channelname=xtomo_reader_f("/Users/youngpyohong/Documents/Work/2014-1/glassrod_W_Au/h5files/tomodata/2xfm",projections_start=172,projections_end=190)
-      print "reading script"
+      print "reading script beep beep"
 
 ### create a text file with channel name
 writetxt(channelname)
 
 ###$$$ temporary: shifts
-projections=int(projections_end)-int(projections_start)+1
+projections=int(projections_end)-int(projections_start)+1-len(exclude_numbers)
 diff=array([ -4,   5,   8,   4,   3,  -3, -10, -10,  -7,   3,   1,   6,   6,
          4,   0,   1,   3,   0,  -9], dtype=int32)
 
