@@ -23,10 +23,8 @@ from tomopy.xtomo.xtomo_io import xtomo_writer
 import sys
 
 def xcor(data,element1,element2):
-      xmatrix=zeros(data[0,:,:,:].shape,dtype=float32)
-      xmatrix[:,:,:]=data[element1,:,:,:]
-      ymatrix=zeros(xmatrix.shape,dtype=float32)
-      ymatrix[:,:,:]=data[element2,:,:,:]
+      xmatrix=data[element1,:,:,:]
+      ymatrix=data[element2,:,:,:]
 
       finalmatrix=zeros(data.shape,dtype=float32)
 
@@ -49,5 +47,5 @@ def xcor(data,element1,element2):
             for j in arange(len(data[0,:,0,0])-1-i):
                   finalmatrix[i+j+1,:,:,:]=np.roll(data[i+j+1,:,:,:],x1-x+1,axis=2)
                   finalmatrix[i+j+1,:,:,:]=np.roll(data[i+j+1,:,:,:],y1-y+1,axis=1)
-      print "Xcor", i
+            print "Xcor", i
       return finalmatrix, shift
