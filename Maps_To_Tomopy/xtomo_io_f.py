@@ -40,29 +40,35 @@ def xtomo_reader_gui(onlyfiles):
     
     return data, theta, channelname
 
-def xtomo_reader_config():
+def xtomo_reader_config(textfile=None):
     try:
-        file_name_f,projections_start,projections_end,exclude_numbers,dummy1,dummy2,dummy3=readtxt()
+        file_name_f,projections_start,projections_end,exclude_numbers,dummy1,dummy2,dummy3,dummy4=readtxt(textfile)
         print "reading txt"
     except IOError:
         print "reading script"
-    print file_name_f
     if file_name_f[-1]=='/':
         ## open all the files from folder
+        print "reading from folder"
         file_name_array = [ f for f in os.listdir(file_name_f) if isfile(join(file_name_f,f))]
         file_name_array = [ f for f in os.listdir(file_name_f) if string.find(f,"h5")!=-1]
+        print type(file_name_array)
         file_names=list()
 
-        for j in arange(len(file_name_array)):
-            for k in arange(len(exclude_numbers)):
-
-                if string.find(file_name_array[j],str(exclude_numbers[k]))==-1:
-
-                    file_names.append(file_name_array[j])
-
+        if len(exclude_numbers)!=0:
+            k=0
+            l=len(exclude_numbers)
+            for j in arange(len(file_name_array)):
+                if k!=l:
+                    if string.find(file_name_array[j],str(exclude_numbers[k]))==-1:
+                        file_names.append(file_name_array[j])
+                    else:
+                        k+=1
+        else:
+            file_names=file_name_array
+                
                             
-
-        f=h5py.File(file_name_f+file_names[0])
+        print file_names
+        f=h5py.File(file_name_f+file_names[0],"r")
 
         projections=len(file_names)
         
@@ -82,29 +88,46 @@ def xtomo_reader_config():
             hdfdata = f["/exchange/images"]
 
             temp=f["MAPS"]["extra_pvs_as_csv"][99]
-            theta[i]=temp[temp.rfind(",")+2:]
+
+            try:
+                  theta[i]=temp[temp.rfind(",")+2:]
+            except ValueError:
+                  theta[i]=0
+            
           
             for j in arange(num_channels):
                 data[j,i,:,:]=hdfdata[j,:,:-2]
         
     else:
+        print "reading specific files"
         projections_orig=int(projections_end)-int(projections_start)+1
         projections=int(projections_end)-int(projections_start)-len(exclude_numbers)+1
         projection_numbers=zeros(projections,int)
         k=0
-        print projections_start, exclude_numbers
+
 
         for j in arange(projections_orig):
             if int(projections_start)+j not in exclude_numbers:
                 projection_numbers[k]=int(projections_start)+j
                 k=k+1
+        ##### UNDER CONSTRUCTION
+
+        zeroarray=array(["","0","00","000","0000"])
+        for loop in arange(5):
+            finder=string.rfind(file_name_f,"/")
+            folder=file_name_f[:finder]
+            filename=file_name_f[finder+1:]+"_"+zeroarray[loop]+str(projection_numbers[0])+".h5"
+            if len([ f for f in os.listdir(folder) if string.find(f,filename)!=-1])!=0:
+                break
                 
-        f=h5py.File(file_name_f + "_0" + str(projection_numbers[0])+ ".h5")
+        ##### END HERE
+        f=h5py.File(file_name_f + "_" +zeroarray[loop]+ str(projection_numbers[0])+ ".h5","r")
         num_channels, num_y, num_x = f['exchange']['images'].shape
         theta = zeros(projections)
         channelname=f['exchange']['images_names']
         data = zeros([num_channels, projections, num_y, num_x-2])
-    
+
+        print loop
         for i in arange(projections):
 
           ### theta
@@ -112,13 +135,17 @@ def xtomo_reader_config():
 
           ### data
               
-              file_name = file_name_f + "_0" + str(projection_numbers[i])+".h5"
+              file_name = file_name_f + "_" + zeroarray[loop] + str(projection_numbers[i])+".h5"
               file_name = os.path.abspath(file_name)
               f = h5py.File(file_name,"r")
               hdfdata = f["/exchange/images"]
 
               temp=f["MAPS"]["extra_pvs_as_csv"][99]
-              theta[i]=temp[temp.rfind(",")+2:]
+              try:
+                  theta[i]=temp[temp.rfind(",")+2:]
+              except ValueError:
+                  theta[i]=0
+            
           
               for j in arange(num_channels):
                     data[j,i,:,:]=hdfdata[j,:,:-2]
@@ -406,3 +433,13 @@ def xtomo_writer_f(data, output_file=None, x_start=0,
                     indq += 1
         else:
             img.save(file_name)
+
+def projection_writer(data,channel):
+    for i in arange(data.shape[0]):
+        j=Image.fromarray(data[i,:,:].astype(np.float32))
+        try:
+              j.save(os.getcwd()+"/tmp/"+channel+"/projections"+"/"+channel+"_projection"+str(i)+".tiff")
+        except IOError:
+              os.makedirs(os.getcwd()+"/tmp/"+channel+"/projections")
+              j.save(os.getcwd()+"/tmp/"+channel+"/projections"+"/"+channel+"_projection"+str(i)+".tiff")
+              

@@ -7,13 +7,16 @@
 #end number
 190
 #exclude numbers
-174,175
+
 #element(number)
-7
+37
 #save sinogram
 no
 #reconstruct type (mlem, art, gridrec)
-gridrec
+mlem
+#cross correlation (element1 for x shift, element2 for y shift) 
+# if it is empty no shift
+37,7
 
 element list:
       [0:'SRcurrent',

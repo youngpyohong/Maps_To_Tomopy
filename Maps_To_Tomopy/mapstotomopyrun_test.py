@@ -2,16 +2,18 @@
 import tomopy
 import numpy as np
 from scipy import *
-import Maps_To_Tomopy
-import Maps_To_Tomopy.readwritetxt
+
 from Maps_To_Tomopy.readwritetxt import readtxt, writetxt
-import Maps_To_Tomopy.sinogram
+
 from Maps_To_Tomopy.sinogram import sinogram
 from PIL import Image
 import os
-import Maps_To_Tomopy.xtomo_io_f
+
 from Maps_To_Tomopy.xtomo_io_f import xtomo_reader_f, xtomo_writer_f, xtomo_reader_config
+from tomopy.xtomo.xtomo_io import xtomo_writer
+from Maps_To_Tomopy.xcor import xcor
 import sys
+
 
 # Read HDF5 file.
 #data, white, dark, theta = tomopy.xtomo_reader('demo/demo3.h5',
@@ -26,9 +28,10 @@ except IndexError:
 
 ### choose either reading from configuration file or reading script
 try:
-      file_name_f,projections_start,projections_end,exclude_numbers,element,reconstructiontype,sinogramsave=readtxt()
+      file_name_f,projections_start,projections_end,exclude_numbers,element,reconstructiontype,sinogramsave,cor_number=readtxt()
       print "reading txt file"
-      data_orig,theta,channelname=xtomo_reader_config()
+      data_orig,theta,channelname=xtomo_reader_config(textfile)
+      print "yes"
 except IOError:
       data_orig,theta,channelname=xtomo_reader_f("/Users/youngpyohong/Documents/Work/2014-1/glassrod_W_Au/h5files/tomodata/2xfm",projections_start=172,projections_end=190)
       print "reading script beep beep"
@@ -36,29 +39,36 @@ except IOError:
 ### create a text file with channel name
 writetxt(channelname)
 
+
+###
+if len(cor_number)!=0:
+    data_orig,shift=xcor(data_orig,cor_number[0],cor_number[1])
+    print "cross correlation has been applied"
+
 ###$$$ temporary: shifts
 projections=int(projections_end)-int(projections_start)+1-len(exclude_numbers)
-diff=array([ -4,   5,   8,   4,   3,  -3, -10, -10,  -7,   3,   1,   6,   6,
-         4,   0,   1,   3,   0,  -9], dtype=int32)
-
-diff=diff[int(projections_start)-172:int(projections_end)-172+1]
-
+##diff=array([ -4,   5,   8,   4,   3,  -3, -10, -10,  -7,   3,   1,   6,   6,
+##         4,   0,   1,   3,   0,  -9], dtype=int32)
+##
+##diff=diff[int(projections_start)-172:int(projections_end)-172+1]
 
 ### counts how many elements to be reconstructed
 count=element.shape[0]
 
+##for i in arange(len(theta)):
+##    theta[i]=i*3
 ### making a loop for each element
 for numb in arange(count):
       elem=element[numb]
-      
+      print elem
       ### select specific element 3d array (projections, x pixel, y pixel)
       data=data_orig[elem,:,:,:]
 
       
-      for i in arange(projections):
-            olddata=data[i,:,:]
-
-            data[i,:,:]=np.roll(olddata[:,:],diff[i],axis=1)
+##      for i in arange(projections):
+##            olddata=data[i,:,:]
+##
+##            data[i,:,:]=np.roll(olddata[:,:],diff[i],axis=1)
 
       sino=sinogram(data)
 
@@ -104,7 +114,9 @@ for numb in arange(count):
 # Write to stack of TIFFs.
 #tomopy.xtomo_writer(d.data_recon, 'tmp/gridrec/test_', axis=0)
 
-      d.center=959
+      #d.center=959
+      d.optimize_center()
+      print d.theta
       print reconstructiontype, channelname[elem]
       if reconstructiontype=="mlem":
             d.mlem()
@@ -113,5 +125,5 @@ for numb in arange(count):
       if reconstructiontype=="gridrec":
             d.gridrec()
 
-      xtomo_writer_f(d.data_recon, 'tmp/'+str(channelname[elem])+'/'
+      xtomo_writer(d.data_recon, 'tmp/'+str(channelname[elem])+'/'
                             +reconstructiontype+'/test_'+str(d.center), axis=0)

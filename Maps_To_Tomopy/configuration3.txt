@@ -7,7 +7,7 @@
 #end number
 190
 #exclude numbers
-174,175
+
 #element(number)
 7
 #save sinogram

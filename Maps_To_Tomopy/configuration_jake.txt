@@ -1,0 +1,16 @@
+#name of the folder
+/Users/youngpyohong/Documents/Work/2014-2/jakes/2012_3_1
+#name of the file
+
+#start number
+172
+#end number
+190
+#exclude numbers
+69, 70
+#element(number)
+35
+#save sinogram
+yes
+#reconstruct type (mlem, art, gridrec)
+mlem

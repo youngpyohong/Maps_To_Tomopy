@@ -25,14 +25,15 @@ def readtxt(textfile=None):
         ## excluding numbers
         if string.find(l[i],"exclude")!=-1:
             count=string.count(l[i+1][:-1],',')+1
-            print count
             exclude_numbers=zeros(count,int)
             temp=l[i+1][:-1]
             for j in arange(count-1):
-                print j
                 exclude_numbers[j]=int(temp[:string.find(temp,',')])
                 temp=temp[string.find(temp,',')+1:]
-            exclude_numbers[-1]=int(temp)
+            try:
+                exclude_numbers[-1]=int(temp)
+            except ValueError:
+                exclude_numbers=array([])
         
         ## element
         if string.find(l[i],"element")!=-1:
@@ -53,8 +54,20 @@ def readtxt(textfile=None):
                 sinogramsave=True
             else:
                 sinogramsave=False
+        ## cross correlation
+        if string.find(l[i],"correlation")!=-1:
+            count=string.count(l[i+2][:-1],',')+1
+            cor_number=zeros(2,int)
+            temp=l[i+2][:-1]
+            for j in arange(count-1):
+                cor_number[j]=int(temp[:string.find(temp,',')])
+                temp=temp[string.find(temp,',')+1:]
+            try:
+                cor_number[-1]=int(temp)
+            except ValueError:
+                cor_number=array([])
     filename=foldern+filen
-    return filename,projections_start,projections_end,exclude_numbers,element,rtype,sinogramsave
+    return filename,projections_start,projections_end,exclude_numbers,element,rtype,sinogramsave,cor_number
 
 def writetxt(elementlist):
     f=open("./elementlist.txt","w")
