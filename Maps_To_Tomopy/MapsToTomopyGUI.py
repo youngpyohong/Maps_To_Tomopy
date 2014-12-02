@@ -27,7 +27,7 @@ import os
 from os.path import isfile, join
 import string
 import pyqtgraph as pg
-from pyqtgraph import QtGui, QtCore
+from PySide import QtGui, QtCore
 import h5py
 import tomopy
 
@@ -42,6 +42,7 @@ class Example(QtGui.QMainWindow):
  
 ##            textEdit = QtGui.QTextEdit()
 ##            self.setCentralWidget(textEdit)
+            self.ImageTag = "exchange2"
 
             exitAction = QtGui.QAction('Exit', self)
             exitAction.triggered.connect(sys.exit)
@@ -73,6 +74,9 @@ class Example(QtGui.QMainWindow):
             runReconstructAction = QtGui.QAction("Reconstruction", self)
             runReconstructAction.triggered.connect(self.runReconstruct)
 
+            selectImageTagAction = QtGui.QAction("Select Image Tag", self)
+            selectImageTagAction.triggered.connect(self.selectImageTag)
+
             menubar = self.menuBar()
             fileMenu = menubar.addMenu('&File')
             fileMenu.addAction(openFileAction)
@@ -83,6 +87,7 @@ class Example(QtGui.QMainWindow):
             optionMenu.addAction(convertAction)
             
             optionMenu.addAction(selectFilesAction)
+            optionMenu.addAction(selectImageTagAction)
             
             
 
@@ -119,6 +124,7 @@ class Example(QtGui.QMainWindow):
             self.recon.show()
             self.recon.btn.setText("Reconstruction")
             self.recon.btn.clicked.connect(self.reconstruct)
+            self.recon.save.clicked.connect(self.saveRecTiff)
             
       def reconstruct(self):
             self.recon.lbl.setText("Reconstruction is currently running")
@@ -137,7 +143,42 @@ class Example(QtGui.QMainWindow):
             
             pg.image(self.d.data_recon)
             self.recon.lbl.setText("Done")
-            
+            print dir(self.recon.save)
+            self.recon.save.setHidden(False)
+
+      def saveRecTiff(self):
+            try:
+                  self.savedir=QtGui.QFileDialog.getSaveFileName()
+                  if not self.savedir[0]:
+                        raise IndexError
+                  self.savedir=self.savedir[0]
+                  tomopy.xtomo_writer(self.d.data_recon,self.savedir,axis=0,digits=4)
+            except IndexError:
+                  print "type the header name"
+
+      def selectImageTag(self):
+            self.sit = QSelect3()
+            self.sit.setWindowTitle("Seletect Image Tag from h5 file")
+            self.sit.data=h5py.File(self.fileNames[0])
+            self.sit.firstColumn = self.sit.data.items()
+            self.sit.firstColumnNum = len(self.sit.firstColumn)
+            for i in arange(self.sit.firstColumnNum):
+                  self.sit.combo.addItem(self.sit.firstColumn[i][0])
+##            print self.sit.combo.currentIndex()
+##            self.sit.secondColumnName = self.sit.firstColumn[self.sit.combo.currentIndex()][0]
+##            
+##            self.sit.secondColumn = self.sit.data[self.sit.secondColumnName].items()
+##            self.sit.secondColumnNum = len(self.sit.secondColumn)
+##            for j in arange(self.sit.secondColumnNum):
+##                  self.sit.combo.addItem(self.sit.secondColumn[j][0])
+            self.sit.btn.setText("Set")
+            self.sit.method.setHidden(True)
+            self.sit.btn.clicked.connect(self.setImageTag)
+            self.sit.show()
+
+      def setImageTag(self):
+            self.ImageTag = self.sit.combo.currentText()
+            print "Image Tag has been set to \"", self.ImageTag, "\"" 
       def showSinogram(self):
             self.sino = QSelect2()
             self.sino.setWindowTitle("Sinogram Window")
@@ -175,6 +216,8 @@ class Example(QtGui.QMainWindow):
                                                                 QtCore.QDir.currentPath())
                   global RH2
                   self.fileNames=fileNametemp[0]
+                  if not self.fileNames:
+                        raise IndexError
                   RH2=self.fileNames
                   self.selectFiles()
 
@@ -212,9 +255,9 @@ class Example(QtGui.QMainWindow):
             self.selectedFiles=[self.fileNames[f] for f in k if y[f]==True]
             
             f=h5py.File(os.path.abspath(self.selectedFiles[0]),"r")
-            self.channelname=f["exchange"]["images_names"]
+            self.channelname=f[self.ImageTag]["images_names"]
 
-            self.channels,self.y,self.x=f["exchange"]["images"].shape
+            self.channels,self.y,self.x=f[self.ImageTag]["images"].shape
             self.projections=len(self.selectedFiles)
             self.theta= zeros(self.projections)
             self.data=zeros([self.channels,self.projections,self.y,self.x-2])
@@ -230,7 +273,7 @@ class Example(QtGui.QMainWindow):
                   self.theta[i] = thetatemp[thetatemp.rfind(",")+2:]
                   
                   for j in arange(self.channels):
-                        self.data[j,i,:,:]=f["/exchange/images"][j,:,:-2]
+                        self.data[j,i,:,:]=f[self.ImageTag]["images"][j,:,:-2]
 
             print "worked"
 #            yy=self.data
@@ -334,6 +377,8 @@ class QSelect3(QtGui.QWidget):
             self.combo = QtGui.QComboBox(self)
             self.method = QtGui.QComboBox(self)
             self.btn = QtGui.QPushButton('Click2')
+            self.save = QtGui.QPushButton("Save tiff files")
+            self.save.setHidden(True)
             self.btn.setText("Sinogram")
             self.lbl=QtGui.QLabel()
             self.lbl.setText("")
@@ -344,6 +389,7 @@ class QSelect3(QtGui.QWidget):
             vb.addWidget(self.combo)
             vb.addWidget(self.method)
             vb.addWidget(self.btn)
+            vb.addWidget(self.save)
             vb.addWidget(self.lbl)
             self.setLayout(vb)
 
