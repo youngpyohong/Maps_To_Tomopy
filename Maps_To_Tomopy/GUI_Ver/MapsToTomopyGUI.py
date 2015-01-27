@@ -1,5 +1,5 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
+#!/usr/bin/python
 
 
 import sys
@@ -11,6 +11,7 @@ from pylab import *
 from pylab import *
 import scipy
 from scipy import ndimage,optimize
+from skimage.feature import match_template
 from PIL import Image
 import os
 from os.path import isfile, join
@@ -19,6 +20,7 @@ import pyqtgraph as pg
 from PySide import QtGui, QtCore
 import h5py
 import tomopy
+
 
 class Example(QtGui.QMainWindow):
 
@@ -32,7 +34,7 @@ class Example(QtGui.QMainWindow):
 ##            textEdit = QtGui.QTextEdit()
 ##            self.setCentralWidget(textEdit)
             self.ImageTag = "exchange"
-            self.thetaPos = 99
+            self.thetaPos = 8
 
 
             exitAction = QtGui.QAction('Exit', self)
@@ -77,14 +79,21 @@ class Example(QtGui.QMainWindow):
             alignFromTextAction = QtGui.QAction("Alignment from Text", self)
             alignFromTextAction.triggered.connect(self.alignFromText)
 
+            saveAlignToTextAction = QtGui.QAction("Save Alignment information to text", self)
+            saveAlignToTextAction.triggered.connect(self.saveAlignToText)
+
             restoreAction = QtGui.QAction("Restore", self)
             restoreAction.triggered.connect(self.restore)
 
             readConfigAction = QtGui.QAction("Read configuration file",self)
             readConfigAction.triggered.connect(self.readConfigFile)
 
+            runCenterOfMassAction = QtGui.QAction("run center of mass action",self)
+            runCenterOfMassAction.triggered.connect(self.runCenterOfMass)
 
-
+            matcherAction = QtGui.QAction("match template", self)
+            matcherAction.triggered.connect(self.match_window)
+            
             self.lbl=QtGui.QLabel()
             self.setCentralWidget(self.lbl)
             self.lbl.setText("Starting")
@@ -104,9 +113,12 @@ class Example(QtGui.QMainWindow):
             self.optionMenu.setDisabled(True)
 
             self.alignmentMenu = menubar.addMenu("Alignment")
+            self.alignmentMenu.addAction(saveAlignToTextAction)
             self.alignmentMenu.addAction(xCorAction)
+            self.alignmentMenu.addAction(matcherAction)
             self.alignmentMenu.addAction(alignFromTextAction)
             self.alignmentMenu.addAction(restoreAction)
+
 
 
             self.afterConversionMenu = menubar.addMenu('After saving data in memory')
@@ -120,7 +132,8 @@ class Example(QtGui.QMainWindow):
             toolbar.addAction(exitAction)
             toolbar.addAction(openFileAction)
             toolbar.addAction(openFolderAction)
-            toolbar.addAction(saveImageAction)
+            toolbar.addAction(runCenterOfMassAction)
+            toolbar.addAction(matcherAction)
             toolbar.addAction(runReconstructAction)
             toolbar.addAction(selectElementAction)
             toolbar.addAction(convertAction)
@@ -133,6 +146,35 @@ class Example(QtGui.QMainWindow):
 #! Alignment
       def test(self):
             test
+
+      def runCenterOfMass(self):
+            self.centerOfMass()
+            self.fitCenterOfMass()
+            self.lbl.setText("Center of Mass: "+str(self.p1[2]))
+            
+      def centerOfMass(self):
+            self.com = zeros(self.projections)
+            temp=zeros(self.data.shape[3])
+            temp2=zeros(self.data.shape[3])
+            self.comelem = 0
+            for i in arange(self.projections):
+                  temp=sum(self.data[self.comelem,i,:,:]-self.data[self.comelem,i,:10,:10].mean(), axis=0)
+                  #temp=sum(self.data[self.comelem,i,:,:]-1, axis=0)
+                  numb2=sum(temp)
+                  for j in arange(self.data.shape[3]):
+                        
+                        temp2[j]=temp[j]*j
+                  numb=float(sum(temp2))/numb2
+                  self.com[i]=numb
+
+            
+      def fitCenterOfMass(self):
+            x=arange(self.projections)*6
+            self.fitfunc = lambda p,x: p[0]*sin(2*pi/360*(x-p[1]))+p[2]
+            self.errfunc = lambda p,x,y: self.fitfunc(p,x)-y
+            p0=[100,100,100]
+            self.p1,success = optimize.leastsq(self.errfunc,p0[:],args=(x,self.com))                                         
+                  
       def CrossCorrelation_test(self):
             
             self.datacopy=zeros(self.data.shape)
@@ -162,8 +204,36 @@ class Example(QtGui.QMainWindow):
                   self.xCor()
             except IndexError:
                   print "type the header name"
+      def match_window(self):
+            self.matcher = QSelect3()
+            self.matcher.setWindowTitle("Match template window")
+            self.matcher.numb= len(self.channelname)
+            for j in arange(self.matcher.numb):
+                  self.matcher.combo.addItem(self.channelname[j])
+            self.matcher.btn.setText("Match Template")
+            self.matcher.method.setVisible(False)
+            self.matcher.save.setVisible(True)
+            self.matcher.save.setText("Restore")
+            self.matcher.btn.clicked.connect(self.match)
+            self.matcher.save.clicked.connect(self.restore)
+            self.matcher.show()
+      def match(self):
+            self.matchElem=self.matcher.combo.currentIndex()
+            for i in arange(self.projections-1):
+                  img=self.data[self.matchElem,i,:,:]
+                  img1=ones([img.shape[0]*2,img.shape[1]*2])*self.data[self.matchElem,i,:10,:10].mean()
+                  img1[img.shape[0]/2:img.shape[0]*3/2,img.shape[1]/2:img.shape[1]*3/2]=img
+                  img2=self.data[self.matchElem,i+1,:,:]
+                  result=match_template(img1,img2)
+                  print result
+                  result=np.where(result==np.max(result))
+                  print result
+                  yshift=result[0][0]-img.shape[0]/2
+                  xshift=result[1][0]-img.shape[1]/2
+                  print xshift, yshift
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], xshift, axis=2)
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], yshift, axis=1)
 
-      
       def xCor(self):
             self.xcor.savedir="texting"
             f=open(self.xcor.savedir+".txt",'w')
@@ -199,24 +269,37 @@ class Example(QtGui.QMainWindow):
                   self.datacopy[...]=self.data[...]
                   self.data[np.isnan(self.data)]=1
                   for i in arange(self.projections):
-                        onlyfilename=self.fileNames[0].rfind("/")
+                        onlyfilename=self.selectedFiles[i].rfind("/")
                         for j in arange(len(read)):
-                              if string.find(read[j],self.fileNames[0][onlyfilename+1:])!=-1:
-                                    shift=int(read[j+1][:-1])
-                                    self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],shift,axis=2)
+                              if string.find(read[j],self.selectedFiles[i][onlyfilename+1:])!=-1:
+                                    secondcol=read[j].rfind(",")
+                                    firstcol=read[j][:secondcol].rfind(",")
+                                    self.yshift[i]=int(float(read[j][secondcol+1:-1]))
+                                    self.xshift[i]=int(float(read[j][firstcol+1:secondcol]))
+                                    self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],self.xshift[i],axis=2)
+            
+                  f.close()
 
-                  
+                  self.lbl.setText("Alignment using values from Text has been completed")
             except IOError:
                   print "choose file please"
+
+      def saveAlignToText(self):
+            try:
+                  self.alignFileName = QtGui.QFileDialog.getSaveFileName()
+                  f=open(self.alignFileName[0],'r+')
+                  for i in arange(self.projections):
+                        onlyfilename=self.selectedFiles[i].rfind("/")
+                        print self.selectedFiles[i]
+                        f.writelines(self.selectedFiles[i][onlyfilename+1:]+", "+str(self.xshift[i])+", "+str(self.yshift[i])+ "\n")
+                  f.close()
+            except IOError:
+                  print "choose file please"
+                        
+
 #==========================
       def xcorrelate(self,image1,image2,edgeguass_sigma=4):
-
-            image1_ft=fftshift(fft2(edgegauss(image1)))
-            image2_ft=fftshift(fft2(edgegauss(image2)))
-
-
-            xcor_ft = image1_ft*np.conjugate(image2_ft)
-            xcor_image=abs(fftshift(fft(fftshift(xcor_ft))))
+            
             return xcor_image
 
       
@@ -309,7 +392,7 @@ class Example(QtGui.QMainWindow):
             #self.d.data = (np.exp(-0.0001*self.d.data)).astype('float32')
             #self.d.center=128
             ###TEMP
-
+            self.d.center=self.p1[2]
             if self.recon.method.currentIndex()==0:
                   self.d.dataset(self.d.data, theta=self.theta*np.pi/180)
                   #self.d.optimize_center()
@@ -329,7 +412,7 @@ class Example(QtGui.QMainWindow):
 
       def saveRecTiff(self):
             try:
-                  self.savedir=QtGui.QFileDialog.getSaveFileName()
+                  self.savedir=QtGui.QFileDialog.SaveFileName()
                   if not self.savedir[0]:
                         raise IndexError
                   self.savedir=self.savedir[0]
@@ -390,13 +473,14 @@ class Example(QtGui.QMainWindow):
 
       def selectFiles(self):
             self.filecheck=QSelect()
+            degree_sign= u'\N{DEGREE SIGN}'
             for i in arange(len(self.fileNames)):
                   f = h5py.File(os.path.abspath(self.fileNames[i]),"r")
                   thetatemp = f["MAPS"]["extra_pvs_as_csv"][8]
                   thetapos = string.rfind(thetatemp, ",")
                   theta = str(round(float(thetatemp[thetapos+1:])))
                   onlyfilename=self.fileNames[i].rfind("_")
-                  self.filecheck.button[i].setText(self.fileNames[i][onlyfilename+1:]+" ("+theta+")")
+                  self.filecheck.button[i].setText(self.fileNames[i][onlyfilename+1:]+" ("+theta+degree_sign+")")
                   self.filecheck.button[i].setChecked(True)
             self.ImageTag=f.items()[-1][0]
             self.lbl.setText("Image Tag has been set to \""+self.ImageTag+"\"")
@@ -459,8 +543,11 @@ class Example(QtGui.QMainWindow):
             self.theta= zeros(self.projections)
             self.data=zeros([self.channels,self.projections,self.y,self.x])
 
+            self.xshift=zeros(self.projections,int)
+            self.yshift=zeros(self.projections,int)
 
-
+            
+            
 
             for i in arange(self.projections):
                   file_name = os.path.abspath(self.selectedFiles[i])
@@ -473,6 +560,9 @@ class Example(QtGui.QMainWindow):
                         self.data[j,i,:,:]=f[self.ImageTag]["images"][j,:,:]
                   print i, "projection(s) has/have been converted"
             print "worked"
+
+            self.p1=[100,100,self.data.shape[3]/2]
+            self.saveAlignToText()
 #            yy=self.data
 #            yy[isinf(yy)]=1
 #            pg.image(yy[37,:,:,:])

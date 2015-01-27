@@ -16,7 +16,7 @@ no
 mlem
 #cross correlation (element1 for x shift, element2 for y shift) 
 # if it is empty no shift
-37,7
+
 
 element list:
       [0:'SRcurrent',

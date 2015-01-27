@@ -1,0 +1,32 @@
+tomo_dataset_000.h5, 15, 0
+tomo_dataset_006.h5, 8, 0
+tomo_dataset_012.h5, 5, 0
+tomo_dataset_018.h5, -2, 0
+tomo_dataset_024.h5, -6, 0
+tomo_dataset_030.h5, -9, 0
+tomo_dataset_036.h5, -3, 0
+tomo_dataset_042.h5, 7, 0
+tomo_dataset_048.h5, 10, 0
+tomo_dataset_054.h5, 8, 0
+tomo_dataset_060.h5, 5, 0
+tomo_dataset_066.h5, 1, 0
+tomo_dataset_072.h5, -1, 0
+tomo_dataset_078.h5, -3, 0
+tomo_dataset_084.h5, -4, 0
+tomo_dataset_090.h5, -7, 0
+tomo_dataset_096.h5, -9, 0
+tomo_dataset_102.h5, -5, 0
+tomo_dataset_108.h5, -3, 0
+tomo_dataset_114.h5, 0, 0
+tomo_dataset_120.h5, 2, 0
+tomo_dataset_126.h5, 4, 0
+tomo_dataset_132.h5, 6, 0
+tomo_dataset_138.h5, 7, 0
+tomo_dataset_144.h5, 8, 0
+tomo_dataset_150.h5, 10, 0
+tomo_dataset_156.h5, 11, 0
+tomo_dataset_162.h5, 13, 0
+tomo_dataset_168.h5, 14, 0
+tomo_dataset_174.h5, 15, 0
+
+

@@ -1,17 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-ZetCode PySide tutorial 
-
-This program creates a skeleton of
-a classic GUI application with a menubar,
-toolbar, statusbar and a central widget. 
-
-author: Jan Bodnar
-website: zetcode.com 
-last edited: August 2011
-"""
 
 import sys
 import tkFileDialog
@@ -42,7 +31,7 @@ class Example(QtGui.QMainWindow):
  
 ##            textEdit = QtGui.QTextEdit()
 ##            self.setCentralWidget(textEdit)
-            self.ImageTag = "exchange2"
+            self.ImageTag = "exchange"
 
             exitAction = QtGui.QAction('Exit', self)
             exitAction.triggered.connect(sys.exit)
@@ -77,6 +66,15 @@ class Example(QtGui.QMainWindow):
             selectImageTagAction = QtGui.QAction("Select Image Tag", self)
             selectImageTagAction.triggered.connect(self.selectImageTag)
 
+            xCorAction = QtGui.QAction("Cross Correlation", self)
+            xCorAction.triggered.connect(self.CrossCorrelation_test)
+
+            alignFromTextAction = QtGui.QAction("Alignment from Text", self)
+            alignFromTextAction.triggered.connect(self.alignFromText)
+
+            restoreAction = QtGui.QAction("Restore", self)
+            restoreAction.triggered.connect(self.restore)
+
             menubar = self.menuBar()
             fileMenu = menubar.addMenu('&File')
             fileMenu.addAction(openFileAction)
@@ -89,8 +87,11 @@ class Example(QtGui.QMainWindow):
             optionMenu.addAction(selectFilesAction)
             optionMenu.addAction(selectImageTagAction)
             
+            alignmentMenu = menubar.addMenu("Alignment")
+            alignmentMenu.addAction(xCorAction)
+            alignmentMenu.addAction(alignFromTextAction)
+            alignmentMenu.addAction(restoreAction)
             
-
             afterConversionMenu = menubar.addMenu('After Conversion')
             afterConversionMenu.addAction(selectElementAction)
             afterConversionMenu.addAction(showSinogramAction)
@@ -113,7 +114,160 @@ class Example(QtGui.QMainWindow):
       def test(self):
             test
 
+      def CrossCorrelation_test(self):
+            
+            self.datacopy=zeros(self.data.shape)
+            self.datacopy[...]=self.data[...]
+            self.data[np.isnan(self.data)]=1
+            self.xcor = QSelect3()
+            self.xcor.setWindowTitle("CrossCorrelation Window")
+            self.xcor.numb = len(self.channelname)
+            for j in arange(self.xcor.numb):
+                  self.xcor.combo.addItem(self.channelname[j])
+            self.xcor.btn.setText("Cross Correlation")
+            print dir(self.xcor.method)
+            self.xcor.method.setVisible(False)
+            self.xcor.save.setVisible(True)
+            self.xcor.btn.clicked.connect(self.xCor)
+            self.xcor.save.clicked.connect(self.restore)
+            self.xcor.show()
+      def restore(self):
+            self.data=zeros(self.datacopy.shape)
+            self.data[...]=self.datacopy[...]
+      def prexCor(self):
+            try:
+                  self.xcor.savedir=QtGui.QFileDialog.getSaveFileName()
+                  if not self.xcor.savedir[0]:
+                        raise IndexError
+                  self.xcor.savedir=self.xcor.savedir[0]
+                  self.xCor()
+            except IndexError:
+                  print "type the header name"
 
+      
+      def xCor(self):
+            self.xcor.savedir="texting"
+            f=open(self.xcor.savedir+".txt",'w')
+            onlyfilename=self.fileNames[0].rfind("/")
+            f.write(self.fileNames[0][onlyfilename+1:]+" \n")
+            f.write("0 \n")
+            self.xcorElement = self.xcor.combo.currentIndex()
+            for i in arange(self.projections-1):
+                  onlyfilename=self.fileNames[i+1].rfind("/")
+                  img1=self.data[self.xcorElement,i,:,:]
+                  img2=self.data[self.xcorElement,i+1,:,:]
+                  xcorimg=self.xcorrelate(img1,img2)
+                  print np.where(xcorimg==np.max(xcorimg))
+                  print xcorimg
+                  xcorimg[np.isnan(xcorimg)]=1
+                  xcorindex=np.where(xcorimg==np.max(xcorimg))[1][0]
+                  shift=xcorindex-(xcorimg.shape[1])/2
+                  print xcorindex, xcorimg.shape[1]
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:],shift,axis=2)
+                  f.write(self.fileNames[i+1][onlyfilename+1:]+" \n")
+                  f.write(str(shift)+ "\n")
+                  print i
+            f.close()
+
+      def alignFromText(self):
+            try:
+                  fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File",
+                        QtCore.QDir.currentPath(),"TXT (*.txt)")
+                  ##### for future reference "All File (*);;CSV (*.csv *.CSV)"
+                  f=open(fileName[0],'r')
+                  read = f.readlines()
+                  self.datacopy=zeros(self.data.shape)
+                  self.datacopy[...]=self.data[...]
+                  self.data[np.isnan(self.data)]=1
+                  for i in arange(self.projections):
+                        onlyfilename=self.fileNames[0].rfind("/")
+                        for j in arange(len(read)):
+                              if string.find(read[j],self.fileNames[0][onlyfilename+1:])!=-1:
+                                    shift=int(read[j+1][:-1])
+                                    self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],shift,axis=2)
+
+                  
+            except IOError:
+                  print "choose file please"
+                  
+            
+      
+            
+
+
+#==========================
+      def xcorrelate(self,image1,image2,edgeguass_sigma=4):
+
+            image1_ft=fftshift(fft2(edgegauss(image1)))
+            image2_ft=fftshift(fft2(edgegauss(image2)))
+
+
+            xcor_ft = image1_ft*np.conjugate(image2_ft)
+            xcor_image=abs(fftshift(fft(fftshift(xcor_ft))))
+            return xcor_image
+
+      
+      def edgegauss(self,imagey,sigma=4):
+            image=zeros(imagey.shape)
+            image[...]=imagey[...]
+            nx=image.shape[1]
+            ny=image.shape[0]
+
+            n_sigma = -log(10**-6)
+            n_roll = max(int(1+sigma*n_sigma),2)
+            exparg = float32(arange(n_roll)/float(sigma))
+            rolloff = float32(1)-exp(-0.5*exparg*exparg)
+
+            ## Top edge
+
+            xstart = 0
+            xstop = nx 
+            iy= 0
+
+            for i_roll in arange(n_roll):
+                  image[iy,xstart:xstop] = image[iy, xstart:xstop] * rolloff[iy]
+                  xstart = min(xstart+1,nx/2-1)
+                  xstop = max(xstop - 1,nx/2)
+                  iy = min(iy+1,ny-1)
+
+
+            ## Bottom edge
+
+            xstart = 0
+            xstop = nx
+            iy = ny-1
+
+            for i_roll in arange(n_roll):
+                  image[iy,xstart:xstop] = image[iy,xstart:xstop]*rolloff[ny-1-iy]
+                  xstart = min(xstart +1,nx/2-1)
+                  xstop = max(xstop-1,nx/2)
+                  iy = max(iy-1, 0)
+
+            ## Left edge
+
+            ystart = 1
+            ystop = ny - 1
+            ix = 0
+
+            for i_roll in arange(n_roll):
+                  image[ystart:ystop,ix]=image[ystart:ystop,ix] * rolloff[ix]
+                  ystart = min(ystart+1,ny/2-1)
+                  ystop = max(ystop-1 , ny/2)
+                  ix = min(ix+1,nx-1)
+
+            ## Right edge
+
+            ystart = 1
+            ystop = ny-1
+            ix = nx-1
+
+            for i_roll in arange(n_roll):
+                  image[ystart:ystop, ix] = image[ystart:ystop,ix] * rolloff[nx-1-ix]
+                  ystart = min(ystart+1, ny/2-1)
+                  ystop = max(ystop-1, ny/2)
+                  ix = max(ix - 1,0)
+                  
+            return image
 #==========================
       def runReconstruct(self):
             self.recon = QSelect3()
@@ -131,7 +285,8 @@ class Example(QtGui.QMainWindow):
             self.d= tomopy.xtomo_dataset(log='debug')
             self.reconelement=self.recon.combo.currentIndex()
             self.d.data=self.data[self.reconelement,:,:,:]
-            self.d.data[self.d.data == inf] =1
+            self.d.data[self.d.data == inf] =2
+            self.d.data[np.isnan(data)]=2
             self.d.dataset(self.d.data, theta=self.theta*np.pi/180)
             self.d.diagnose_center()
             if self.recon.method.currentIndex()==0:
@@ -143,7 +298,7 @@ class Example(QtGui.QMainWindow):
             
             pg.image(self.d.data_recon)
             self.recon.lbl.setText("Done")
-            print dir(self.recon.save)
+##            print dir(self.recon.save)
             self.recon.save.setHidden(False)
 
       def saveRecTiff(self):
@@ -268,7 +423,7 @@ class Example(QtGui.QMainWindow):
             for i in arange(self.projections):
                   file_name = os.path.abspath(self.selectedFiles[i])
                   f = h5py.File(file_name,"r")
-                  thetatemp=f["MAPS"]["extra_pvs_as_csv"][99]
+                  thetatemp=f["MAPS"]["extra_pvs_as_csv"][8]
 
                   self.theta[i] = thetatemp[thetatemp.rfind(",")+2:]
                   
@@ -285,8 +440,7 @@ class Example(QtGui.QMainWindow):
             sinodata=self.data[self.sinoelement,:,:,:]
             sinogram=zeros([sinodata.shape[0]*self.thickness,sinodata.shape[2]],dtype=float32)
             for i in arange(self.projections):
-                  for j in arange(self.thickness):
-                        sinogram[i*self.thickness+j,:]=sinodata[i,sinodata.shape[1]/2,:]
+                  sinogram[i*self.thickness:(i+1)*self.thickness,:]=sinodata[i,sinodata.shape[1]/2-5:sinodata.shape[1]/2+5,:]
             sinogram[isinf(sinogram)]=1
             
             pg.image(sinogram)
@@ -320,18 +474,22 @@ class QSelect(QtGui.QWidget):
         
       def initUI(self):
             names=list()
-            for i in arange(45):
+            for i in arange(100):
                   names.append("")
 
 
             self.grid = QtGui.QGridLayout()
 
             j = 0
-            pos = [(0, 0), (1, 0), (2,0), (3, 0),(4,0),(5,0),(6,0),(7,0),(8,0),
-                (0, 1), (1, 1), (2,1), (3, 1),(4,1),(5,1),(6,1),(7,1),(8,1),
-                (0, 2), (1, 2), (2,2), (3, 2),(4,2),(5,2),(6,2),(7,2),(8,2),
-                (0, 3), (1, 3), (2,3), (3, 3),(4,3),(5,3),(6,3),(7,3),(8,3),
-                (0, 4), (1, 4), (2,4), (3, 4),(4,4),(5,4),(6,4),(7,4),(8,4)]
+##            pos = [(0, 0), (1, 0), (2,0), (3, 0),(4,0),(5,0),(6,0),(7,0),(8,0),
+##                (0, 1), (1, 1), (2,1), (3, 1),(4,1),(5,1),(6,1),(7,1),(8,1),
+##                (0, 2), (1, 2), (2,2), (3, 2),(4,2),(5,2),(6,2),(7,2),(8,2),
+##                (0, 3), (1, 3), (2,3), (3, 3),(4,3),(5,3),(6,3),(7,3),(8,3),
+##                (0, 4), (1, 4), (2,4), (3, 4),(4,4),(5,4),(6,4),(7,4),(8,4)]
+            pos = list()
+            for y in arange(10):
+                  for x in arange(10):
+                        pos.append((x,y))
             self.button=list()
             for i in names:
                   self.button.append(QtGui.QCheckBox(i))

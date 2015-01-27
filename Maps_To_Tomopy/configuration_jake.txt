@@ -9,8 +9,12 @@
 #exclude numbers
 69, 70
 #element(number)
-35
+37
 #save sinogram
 yes
 #reconstruct type (mlem, art, gridrec)
 mlem
+#cross correlation (element1 for x shift, element2 for y shift) 
+# if it is empty no shift
+
+######3
