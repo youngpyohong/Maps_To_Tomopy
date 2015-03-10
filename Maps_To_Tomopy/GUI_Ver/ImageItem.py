@@ -346,17 +346,14 @@ class ImageItem(GraphicsObject):
         self.iniX=ev.pos().x()
         self.iniY=ev.pos().y()
         self.moving="True"
-        print self.moving
     def mouseReleaseEvent(self,ev):
-        print "mouse is released"
-        print ev.pos().x()
+
         self.finalX=ev.pos().x()
         self.finalY=ev.pos().y()
         self.difX=self.finalX-self.iniX
         self.difY=self.finalY-self.iniY
         self.moving="False"
-        print self.moving
-        print "x", self.difX, "y", self.difY
+
     def mouseMoveEvent(self, ev):
         self.movingX=ev.pos().x()
         self.movingY=ev.pos().y()

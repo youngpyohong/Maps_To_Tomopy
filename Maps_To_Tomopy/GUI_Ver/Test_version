@@ -11,7 +11,6 @@ from pylab import *
 from pylab import *
 import scipy
 from scipy import ndimage,optimize
-import scipy.ndimage.interpolation as spni
 from skimage.feature import match_template
 from PIL import Image
 import os
@@ -99,19 +98,6 @@ class Example(QtGui.QMainWindow):
 
             matcherAction = QtGui.QAction("match template", self)
             matcherAction.triggered.connect(self.match_window)
-
-            exportDataAction = QtGui.QAction("export data",self)
-            exportDataAction.triggered.connect(self.export_data)
-
-            runTransRecAction = QtGui.QAction("Transmission Recon", self)
-            runTransRecAction.triggered.connect(self.runTransReconstruct)
-
-            saveHotSpotPosAction = QtGui.QAction("Save Hot Spot Pos", self)
-            saveHotSpotPosAction.triggered.connect(self.saveHotSpotPos)
-
-            alignHotSpotPosAction = QtGui.QAction("Align Hot Spot pos", self)
-            alignHotSpotPosAction.triggered.connect(self.alignHotSpotPos1)
-
             
             self.lbl=QtGui.QLabel()
             self.setCentralWidget(self.lbl)
@@ -135,7 +121,7 @@ class Example(QtGui.QMainWindow):
             self.alignmentMenu.addAction(saveAlignToTextAction)
             self.alignmentMenu.addAction(runCenterOfMassAction)
             self.alignmentMenu.addAction(alignCenterOfMassAction)
-            self.alignmentMenu.addAction(xCorAction)
+            #self.alignmentMenu.addAction(xCorAction)
             self.alignmentMenu.addAction(matcherAction)
             self.alignmentMenu.addAction(alignFromTextAction)
             self.alignmentMenu.addAction(restoreAction)
@@ -152,16 +138,13 @@ class Example(QtGui.QMainWindow):
             toolbar.addAction(exitAction)
             toolbar.addAction(openFileAction)
             toolbar.addAction(openFolderAction)
-            toolbar.addAction(saveHotSpotPosAction)
-            toolbar.addAction(alignHotSpotPosAction)
-            toolbar.addAction(exportDataAction)
-            toolbar.addAction(runTransRecAction)
             toolbar.addAction(runCenterOfMassAction)
             toolbar.addAction(matcherAction)
             toolbar.addAction(runReconstructAction)
             toolbar.addAction(selectElementAction)
             toolbar.addAction(convertAction)
             toolbar.addAction(showSinogramAction)
+            print dir(toolbar)
   
             self.move(400, 150)
             self.setWindowTitle('Maps_To_Tomopy')    
@@ -207,7 +190,7 @@ class Example(QtGui.QMainWindow):
 
             
       def fitCenterOfMass(self):
-            x=self.theta
+            x=arange(self.projections)*6
             self.fitfunc = lambda p,x: p[0]*sin(2*pi/360*(x-p[1]))+p[2]
             self.errfunc = lambda p,x,y: self.fitfunc(p,x)-y
             p0=[100,100,100]
@@ -215,9 +198,9 @@ class Example(QtGui.QMainWindow):
             self.centerOfMassDiff=self.fitfunc(self.p1,x)-self.com
 
       def alignCenterOfMass(self):
-            for i in arange(self.projections):
-                  self.xshift[i]=int(self.centerOfMassDiff[i])
-                  self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.xshift[i], axis=2)
+            for i in arange(self.projections-1):
+                  self.xshift[i+1]=int(self.centerOfMassDiff[i+1])
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], self.xshift[i+1], axis=2)
             self.lbl.setText("Alignment has been completed")
                   
 
@@ -280,27 +263,28 @@ class Example(QtGui.QMainWindow):
                   self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], self.yshift[i+1], axis=1)
 
       def xCor(self):
-##            self.xcor.savedir="texting"
-##            f=open(self.xcor.savedir+".txt",'w')
-##            onlyfilename=self.fileNames[0].rfind("/")
-##            f.write(self.fileNames[0][onlyfilename+1:]+" \n")
-##            f.write("0 \n")
+            self.xcor.savedir="texting"
+            f=open(self.xcor.savedir+".txt",'w')
+            onlyfilename=self.fileNames[0].rfind("/")
+            f.write(self.fileNames[0][onlyfilename+1:]+" \n")
+            f.write("0 \n")
             self.xcorElement = self.xcor.combo.currentIndex()
             for i in arange(self.projections-1):
                   onlyfilename=self.fileNames[i+1].rfind("/")
                   img1=self.data[self.xcorElement,i,:,:]
                   img2=self.data[self.xcorElement,i+1,:,:]
-                  
-                  self.t0,self.t1=self.xcorrelate(img1,img2)
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:],self.t0,axis=1)
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:],self.t1,axis=2)
-
-                  
-##                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:],shift,axis=2)
-##                  f.write(self.fileNames[i+1][onlyfilename+1:]+" \n")
-##                  f.write(str(shift)+ "\n")
-##                  print i
-##            f.close()
+                  xcorimg=self.xcorrelate(img1,img2)
+                  print np.where(xcorimg==np.max(xcorimg))
+                  print xcorimg
+                  xcorimg[np.isnan(xcorimg)]=1
+                  xcorindex=np.where(xcorimg==np.max(xcorimg))[1][0]
+                  shift=xcorindex-(xcorimg.shape[1])/2
+                  print xcorindex, xcorimg.shape[1]
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:],shift,axis=2)
+                  f.write(self.fileNames[i+1][onlyfilename+1:]+" \n")
+                  f.write(str(shift)+ "\n")
+                  print i
+            f.close()
 
       def alignFromText(self):
             try:
@@ -321,7 +305,7 @@ class Example(QtGui.QMainWindow):
                                     self.yshift[i]=int(float(read[j][secondcol+1:-1]))
                                     self.xshift[i]=int(float(read[j][firstcol+1:secondcol]))
                                     self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],self.xshift[i],axis=2)
-                                    self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],self.yshift[i],axis=1)
+                                    self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],self.xshift[i],axis=1)
             
                   f.close()
 
@@ -344,8 +328,8 @@ class Example(QtGui.QMainWindow):
 
 #==========================
       def xcorrelate(self,image1,image2,edgeguass_sigma=4):
-            t0,t1=tomopy.algorithms.preprocess.align_projections.cross_correlate(image1,image2)
-            return t0,t1
+            
+            return xcor_image
 
       
       def edgegauss(self,imagey,sigma=4):
@@ -409,65 +393,10 @@ class Example(QtGui.QMainWindow):
                   ix = max(ix - 1,0)
                   
             return image
-
-#==========================
-
-      def saveHotSpotPos(self):
-            self.projView = IView()
-            self.projView.show()
-            self.projView.data=self.data[28,:,:,:]
-            self.projView.posMat=zeros([self.data.shape[1],2])
-            self.projView.setImage(self.data[28,0,:,:])
-            
-      def alignHotSpotPos1(self):
-            
-            for i in arange(self.projections-1):
-                  print "shifted"
                   
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,0]-self.projView.posMat[i+1,0])), axis=2)
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,1]-self.projView.posMat[i+1,1])), axis=1)            
-
-      def alignHotSpotPos2(self):
-            for i in arange(self.projections-1):
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,1]-self.projView.posMat[i+1,1])), axis=1)     
-            x=self.theta
-            self.fitfunc = lambda p,x: p[0]*sin(2*pi/360*(x-p[1]))+p[2]
-            self.errfunc = lambda p,x,y: self.fitfunc(p,x)-y
-            p0=[100,100,100]
-            self.p1,success = optimize.leastsq(self.errfunc,p0[:],args=(x,self.projView.posMat[:,0]))
-            self.hotSpotPosDiff=self.fitfunc(self.p1,x)-self.projView.posMat[:,0]
-
-            for i in arange(self.projections):
-                  self.xshift[i]=int(self.hotSpotPosDiff[i])
-                  self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.xshift[i], axis=2)
-            self.lbl.setText("Alignment has been completed")
             
-            
-#==========================
-      def export_data(self):
-            a=h5py.File("export_data.h5")
-            print np.where(self.data==inf)
-            
-            a.create_dataset("data",data=self.data,compression="gzip")
-            a.close()
-
 
 #==========================
-
-      def runTransReconstruct(self):
-            self.recon = QSelect3()
-            self.recon.setWindowTitle("Reconstruction Window")
-            self.recon.numb=len(self.channelname)
-            for j in arange(self.recon.numb):
-                  self.recon.combo.addItem(self.channelname[j])
-            self.recon.show()
-            self.recon.btn.setText("Reconstruction")
-            self.recon.btn.clicked.connect(self.reconstruct)
-            self.recon.save.clicked.connect(self.saveRecTiff)
-            self.recon.reconvalue=1
-
-
-      
       def runReconstruct(self):
             self.recon = QSelect3()
             self.recon.setWindowTitle("Reconstruction Window")
@@ -478,7 +407,6 @@ class Example(QtGui.QMainWindow):
             self.recon.btn.setText("Reconstruction")
             self.recon.btn.clicked.connect(self.reconstruct)
             self.recon.save.clicked.connect(self.saveRecTiff)
-            self.recon.reconvalue=0
             
       def reconstruct(self):
             self.recon.lbl.setText("Reconstruction is currently running")
@@ -490,10 +418,7 @@ class Example(QtGui.QMainWindow):
 
             
             ###TEMP
-            if self.recon.reconvalue==0:
-                  self.d.data = (np.exp(-0.0001*self.d.data)).astype('float32')
-            else:
-                  print "transmission"
+            self.d.data = (np.exp(-0.0001*self.d.data)).astype('float32')
             #self.d.center=128
             ###TEMP
             self.d.center=self.p1[2]
@@ -508,7 +433,7 @@ class Example(QtGui.QMainWindow):
             elif self.recon.method.currentIndex()==2:
                   self.d.dataset(self.d.data, theta=self.theta*np.pi/180)
                   #self.d.optimize_center()
-                  self.d.pml()
+                  self.d.art()
             print self.d.center
             pg.image(self.d.data_recon)
             self.recon.lbl.setText("Done")
@@ -516,7 +441,7 @@ class Example(QtGui.QMainWindow):
 
       def saveRecTiff(self):
             try:
-                  self.savedir=QtGui.QFileDialog.getSaveFileName()
+                  self.savedir=QtGui.QFileDialog.SaveFileName()
                   if not self.savedir[0]:
                         raise IndexError
                   self.savedir=self.savedir[0]
@@ -533,37 +458,18 @@ class Example(QtGui.QMainWindow):
             self.sit.firstColumnNum = len(self.sit.firstColumn)
             for i in arange(self.sit.firstColumnNum):
                   self.sit.combo.addItem(self.sit.firstColumn[i][0])
-            print self.sit.combo.currentIndex()
-
+##            print self.sit.combo.currentIndex()
+##            self.sit.secondColumnName = self.sit.firstColumn[self.sit.combo.currentIndex()][0]
+##            
+##            self.sit.secondColumn = self.sit.data[self.sit.secondColumnName].items()
+##            self.sit.secondColumnNum = len(self.sit.secondColumn)
+##            for j in arange(self.sit.secondColumnNum):
+##                  self.sit.combo.addItem(self.sit.secondColumn[j][0])
             self.sit.combo.setCurrentIndex(i)
-            for i in arange(30):
-                  self.sit.method.removeItem(0)
-            self.sit.secondColumnName = self.sit.firstColumn[self.sit.combo.currentIndex()][0]
-            
-            self.sit.secondColumn = self.sit.data[self.sit.secondColumnName].items()
-            self.sit.secondColumnNum = len(self.sit.secondColumn)
-            for j in arange(self.sit.secondColumnNum):
-                  self.sit.method.addItem(self.sit.secondColumn[j][0])
-
-            self.sit.method.setHidden(False)
-            
-            self.sit.combo.currentIndexChanged.connect(self.selectImageTag_image)
             self.sit.btn.setText("Set")
-
+            self.sit.method.setHidden(True)
             self.sit.btn.clicked.connect(self.setImageTag)
             self.sit.show()
-
-      def selectImageTag_image(self):
-            for i in arange(30):
-                  self.sit.method.removeItem(0)
-            self.sit.secondColumnName = self.sit.firstColumn[self.sit.combo.currentIndex()][0]
-            
-            self.sit.secondColumn = self.sit.data[self.sit.secondColumnName].items()
-            self.sit.secondColumnNum = len(self.sit.secondColumn)
-            for j in arange(self.sit.secondColumnNum):
-                  self.sit.method.addItem(self.sit.secondColumn[j][0])
-
-            self.sit.method.setHidden(False)
 
       def setImageTag(self):
             self.ImageTag = self.sit.combo.currentText()
@@ -578,7 +484,6 @@ class Example(QtGui.QMainWindow):
                   self.sino.combo.addItem(self.channelname[j])
             self.sino.show()
             self.sino.btn.clicked.connect(self.sinogram)
-            self.sino.btn2.clicked.connect(self.sinoShift)
 
             
       def convert(self):
@@ -660,9 +565,9 @@ class Example(QtGui.QMainWindow):
             self.selectedFiles=[self.fileNames[f] for f in k if y[f]==True]
             
             f=h5py.File(os.path.abspath(self.selectedFiles[0]),"r")
-            self.channelname=f[self.ImageTag]["channel_names"]
+            self.channelname=f[self.ImageTag]["images_names"]
 
-            self.channels,self.y,self.x=f[self.ImageTag]["data"].shape
+            self.channels,self.y,self.x=f[self.ImageTag]["images"].shape
             self.projections=len(self.selectedFiles)
             self.theta= zeros(self.projections)
             self.data=zeros([self.channels,self.projections,self.y,self.x])
@@ -681,12 +586,10 @@ class Example(QtGui.QMainWindow):
                   self.theta[i] = float(thetatemp[thetatemp.rfind(",")+3:])
                   
                   for j in arange(self.channels):
-                        self.data[j,i,:,:-2]=f[self.ImageTag]["data"][j,:,:-2]
+                        self.data[j,i,:,:]=f[self.ImageTag]["images"][j,:,:]
                   print i, "projection(s) has/have been converted"
             print "worked"
 
-            self.data[isnan(self.data)]=0.0001
-            self.data[self.data==inf]=0.0001
             self.p1=[100,100,self.data.shape[3]/2]
 
             self.alignmentMenu.setEnabled(True)
@@ -711,39 +614,19 @@ class Example(QtGui.QMainWindow):
                         temp.save(path+self.fileNames[i][index:-3]+"_"+self.channelname[j]+".tif")
 #####!!!!
 
-##      def sinogram(self):
-##            self.thickness=10
-##            self.sinoelement=self.sino.combo.currentIndex()
-##            sinodata=self.data[self.sinoelement,:,:,:]
-##            sinogram=zeros([sinodata.shape[0]*self.thickness,sinodata.shape[2]],dtype=float32)
-##            for i in arange(self.projections):
-##                  for j in arange(self.thickness):
-##                        sinogram[i*self.thickness+j,:]=sinodata[i,sinodata.shape[1]/2,:]
-##            sinogram[isinf(sinogram)]=1
-##
-##            iView=IView()
-##            iView.show()
-##            iView.setImage(sinogram)
       def sinogram(self):
             self.thickness=10
             self.sinoelement=self.sino.combo.currentIndex()
             sinodata=self.data[self.sinoelement,:,:,:]
             sinogram=zeros([sinodata.shape[0]*self.thickness,sinodata.shape[2]],dtype=float32)
             for i in arange(self.projections):
-                  sinogram[i*self.thickness:(i+1)*self.thickness,:]=sinodata[i,sinodata.shape[1]/2-self.thickness/2:sinodata.shape[1]/2+self.thickness/2,:]
+                  for j in arange(self.thickness):
+                        sinogram[i*self.thickness+j,:]=sinodata[i,sinodata.shape[1]/2,:]
             sinogram[isinf(sinogram)]=1
-
-            self.iView=IView()
-            self.iView.show()
-            self.iView.setImage(sinogram)
-            self.iView.getShape()
-
-      def sinoShift(self):
-            for i in arange(self.projections):
-                  
-                  self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.iView.regShift[i], axis=2)
             
-            
+            pg.image(sinogram)
+
+
 
 ####==============
       def readConfigFile(self):
@@ -854,13 +737,11 @@ class QSelect2(QtGui.QWidget):
             self.combo = QtGui.QComboBox(self)
             self.btn = QtGui.QPushButton('Click2')
             self.btn.setText("Sinogram")
-            self.btn2 = QtGui.QPushButton("shift data")
             self.lbl=QtGui.QLabel()
             self.lbl.setText("")
             vb = QtGui.QVBoxLayout()
             vb.addWidget(self.combo)
             vb.addWidget(self.btn)
-            vb.addWidget(self.btn2)
             vb.addWidget(self.lbl)
             self.setLayout(vb)
 ####===================
@@ -893,64 +774,7 @@ class QSelect3(QtGui.QWidget):
             vb.addWidget(self.lbl)
             self.setLayout(vb)
 
-class IView(pg.ImageView):
-    
-      def __init__(self):
-            super(IView, self).__init__()
-        
-            self.initUI()
 
-            self.hotSpotNumb=0
-        
-      def initUI(self):
-            self.show()
-
-      def keyPressEvent(self, ev):
-            if ev.key() == QtCore.Qt.Key_M:
-                  self.getMousePos()
-                  self.shiftnumb = int(self.imageItem.difY)
-                  self.shift()
-                  self.setImage(self.copy)
-                  self.regShift[self.numb2]+=self.shiftnumb
-                  
-            if ev.key() == QtCore.Qt.Key_Down:
-
-                  self.getMousePos()
-                  self.shiftnumb=1
-                  self.shift()
-                  self.setImage(self.copy)
-                  self.regShift[self.numb2]+=self.shiftnumb
-
-            if ev.key() == QtCore.Qt.Key_Up:
-
-                  self.getMousePos()
-                  self.shiftnumb=-1
-                  self.shift()
-                  self.setImage(self.copy)
-                  self.regShift[self.numb2]+=self.shiftnumb
-
-            if ev.key() == QtCore.Qt.Key_N:
-                  print "n"
-                  print self.data.shape[0], self.hotSpotNumb
-                  print self.imageItem.iniX, self.imageItem.iniY
-                  self.posMat[self.hotSpotNumb,0]=self.imageItem.iniY
-                  self.posMat[self.hotSpotNumb,1]=self.imageItem.iniX
-                  if self.hotSpotNumb<self.data.shape[0]-1:
-                        self.hotSpotNumb+=1
-                        self.setImage(self.data[self.hotSpotNumb,:,:])
-                        
-                  
-      def getMousePos(self):
-            numb=self.imageItem.iniX
-            self.numb2=int(numb/10)
-
-
-      def shift(self):
-            self.copy=self.getProcessedImage()
-            self.copy[self.numb2*10:self.numb2*10+10,:]=np.roll(self.copy[self.numb2*10:self.numb2*10+10,:],self.shiftnumb,axis=1)
-      def getShape(self):
-            self.regShift=zeros(self.getProcessedImage().shape[0],dtype=int)
-            
 def main():
     
       app = QtGui.QApplication(sys.argv)

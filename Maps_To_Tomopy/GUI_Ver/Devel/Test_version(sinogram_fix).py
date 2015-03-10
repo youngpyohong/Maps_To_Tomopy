@@ -36,8 +36,9 @@ class Example(QtGui.QMainWindow):
  
 ##            textEdit = QtGui.QTextEdit()
 ##            self.setCentralWidget(textEdit)
+            
             self.ImageTag = "exchange"
-            self.thetaPos = 8
+            self.thetaPos = 657
 
 
             exitAction = QtGui.QAction('Exit', self)
@@ -112,10 +113,36 @@ class Example(QtGui.QMainWindow):
             alignHotSpotPosAction = QtGui.QAction("Align Hot Spot pos", self)
             alignHotSpotPosAction.triggered.connect(self.alignHotSpotPos1)
 
+            ###
+##            self.frame = QtGui.QFrame()
+##            self.vl = QtGui.QHBoxLayout()
+##            tab_widget = QtGui.QTabWidget()
+##            tab_widget.addTab(self.createGridInputWidget(), unicode("Generate"))
+##            tab_widget.addTab(self.createGridInputWidget(), unicode("Second"))
+##            self.vl.addWidget(tab_widget)
+##
+##            self.win=pg.ImageView()
+##            self.layout1 = QtGui.QVBoxLayout()
+##            self.layout1.addWidget(self.win)
+##
+##            self.vl.addWidget(self.layout1)
+##            self.frame.setLayout(self.vl)
+##            self.setCentralWidget(self.frame)
+            self.centralWidget = pg.Qt.QtGui.QWidget(self)
+            self.centralWidget.setObjectName(unicode("centralWidget"))
+            self.win = pg.GraphicsWindow(title="Basic plotting examples")
+            self.tabWidget = pg.Qt.QtGui.QTabWidget(self.centralWidget)
+            self.tabWidget.setGeometry(pg.Qt.QtCore.QRect(20, 70, 691, 371))
+            self.tabWidget.setObjectName(unicode("tabWidget"))
+            self.tab = pg.Qt.QtGui.QWidget()
+            self.layout1 = pg.Qt.QtGui.QVBoxLayout()
+            self.layout1.addWidget(self.win)
+            self.tab.setLayout(self.layout1)
+            ###
             
-            self.lbl=QtGui.QLabel()
-            self.setCentralWidget(self.lbl)
-            self.lbl.setText("Starting")
+##            self.lbl=QtGui.QLabel()
+##            self.setCentralWidget(self.lbl)
+##            self.lbl.setText("Starting")
 
             menubar = self.menuBar()
             fileMenu = menubar.addMenu('&File')
@@ -138,12 +165,14 @@ class Example(QtGui.QMainWindow):
             self.alignmentMenu.addAction(xCorAction)
             self.alignmentMenu.addAction(matcherAction)
             self.alignmentMenu.addAction(alignFromTextAction)
+            self.alignmentMenu.addAction(saveHotSpotPosAction)
+            self.alignmentMenu.addAction(alignHotSpotPosAction)
             self.alignmentMenu.addAction(restoreAction)
             self.alignmentMenu.setDisabled(True)
 
             self.afterConversionMenu = menubar.addMenu('After saving data in memory')
             self.afterConversionMenu.addAction(saveImageAction)
-            self.afterConversionMenu.addAction(selectElementAction)
+            #self.afterConversionMenu.addAction(selectElementAction)
             self.afterConversionMenu.addAction(showSinogramAction)
             self.afterConversionMenu.addAction(runReconstructAction)
             self.afterConversionMenu.setDisabled(True)
@@ -162,10 +191,36 @@ class Example(QtGui.QMainWindow):
             toolbar.addAction(selectElementAction)
             toolbar.addAction(convertAction)
             toolbar.addAction(showSinogramAction)
+            toolbar.setVisible(False)
   
-            self.move(400, 150)
+            self.move(0, 0)
             self.setWindowTitle('Maps_To_Tomopy')    
             self.show()
+#############################
+## creating tab
+      def createGridInputWidget(self):
+          GridStartVal = '2'
+          hBox = QtGui.QHBoxLayout()
+          self.GridXIn = QtGui.QLineEdit()
+          self.GridYIn = QtGui.QLineEdit()
+          self.GridZIn = QtGui.QLineEdit()
+
+          self.GridXIn.setText(GridStartVal)
+          self.GridYIn.setText(GridStartVal)
+          self.GridZIn.setText(GridStartVal)
+
+          hBox.addWidget(QtGui.QLabel("X"))
+          hBox.addWidget(self.GridXIn)
+          hBox.addWidget(QtGui.QLabel("Y"))
+          hBox.addWidget(self.GridYIn)
+          hBox.addWidget(QtGui.QLabel("Z"))
+          hBox.addWidget(self.GridZIn)
+
+          gridGroup = QtGui.QGroupBox('Grid Size')
+          gridGroup.setLayout(hBox)
+
+          return gridGroup
+
 #############################
 #! Alignment
       def test(self):
@@ -189,6 +244,27 @@ class Example(QtGui.QMainWindow):
             self.centerOfMass()
             self.fitCenterOfMass()
             self.lbl.setText("Center of Mass: "+str(self.p1[2]))
+#### devel
+      def runCenterOfMass2(self):
+            self.com = zeros(self.projections)
+            temp=zeros(self.data.shape[3])
+            temp2=zeros(self.data.shape[3])
+            self.comelem = self.sino.combo.currentIndex()
+            for i in arange(self.projections):
+                  temp=sum(self.data[self.comelem,i,self.sino.sld.value()-self.thickness/2:self.sino.sld.value()+self.thickness/2,:]-self.data[self.comelem,i,:10,:10].mean(), axis=0)
+                  #temp=sum(self.data[self.comelem,i,:,:]-1, axis=0)
+                  numb2=sum(temp)
+                  for j in arange(self.data.shape[3]):
+                        
+                        temp2[j]=temp[j]*j
+                  numb=float(sum(temp2))/numb2
+                  self.com[i]=numb
+            self.fitCenterOfMass()
+            self.lbl.setText("Center of Mass: "+str(self.p1[2]))
+            self.alignCenterOfMass()
+            self.sinogram()
+            
+#### devel
             
       def centerOfMass(self):
             self.com = zeros(self.projections)
@@ -240,8 +316,8 @@ class Example(QtGui.QMainWindow):
             self.xcor.save.clicked.connect(self.restore)
             self.xcor.show()
       def restore(self):
-            self.data=zeros(self.datacopy.shape)
-            self.data[...]=self.datacopy[...]
+            self.data=zeros(self.oldData.shape)
+            self.data[...]=self.oldData[...]
       def prexCor(self):
             try:
                   self.xcor.savedir=QtGui.QFileDialog.getSaveFileName()
@@ -488,7 +564,6 @@ class Example(QtGui.QMainWindow):
             self.d.data[self.d.data==inf]=0.01
             self.d.data[np.isnan(self.d.data)]=0.01
 
-            
             ###TEMP
             if self.recon.reconvalue==0:
                   self.d.data = (np.exp(-0.0001*self.d.data)).astype('float32')
@@ -508,9 +583,17 @@ class Example(QtGui.QMainWindow):
             elif self.recon.method.currentIndex()==2:
                   self.d.dataset(self.d.data, theta=self.theta*np.pi/180)
                   #self.d.optimize_center()
+                  self.d.art()
+            elif self.recon.method.currentIndex()==3:
+                  self.d.dataset(self.d.data, theta=self.theta*np.pi/180)
+                  #self.d.optimize_center()
                   self.d.pml()
+                  
             print self.d.center
-            pg.image(self.d.data_recon)
+            self.reconView=pg.ImageView()
+            self.reconView.show()
+            self.reconView.setImage(self.d.data_recon)
+            self.reconView.setWindowTitle("Slices of reconstructed model")
             self.recon.lbl.setText("Done")
             self.recon.save.setHidden(False)
 
@@ -570,15 +653,7 @@ class Example(QtGui.QMainWindow):
             self.lbl.setText("Image Tag has been set to \""+self.ImageTag+"\"")
             print "Image Tag has been set to \"", self.ImageTag, "\""
 #==============================
-      def showSinogram(self):
-            self.sino = QSelect2()
-            self.sino.setWindowTitle("Sinogram Window")
-            self.sino.numb=len(self.channelname)
-            for j in arange(self.sino.numb):
-                  self.sino.combo.addItem(self.channelname[j])
-            self.sino.show()
-            self.sino.btn.clicked.connect(self.sinogram)
-            self.sino.btn2.clicked.connect(self.sinoShift)
+
 
             
       def convert(self):
@@ -682,7 +757,7 @@ class Example(QtGui.QMainWindow):
                   
                   for j in arange(self.channels):
                         self.data[j,i,:,:-2]=f[self.ImageTag]["data"][j,:,:-2]
-                  print i, "projection(s) has/have been converted"
+                  print i+1, "projection(s) has/have been converted"
             print "worked"
 
             self.data[isnan(self.data)]=0.0001
@@ -691,6 +766,10 @@ class Example(QtGui.QMainWindow):
 
             self.alignmentMenu.setEnabled(True)
 
+            self.oldData=zeros(self.data.shape)
+            self.oldData[...]=self.data[...]
+            
+            
 #            yy=self.data
 #            yy[isinf(yy)]=1
 #            pg.image(yy[37,:,:,:])
@@ -698,10 +777,12 @@ class Example(QtGui.QMainWindow):
 
 #####!!!! just temp need to be fixed
       def saveImage(self):
+            self.saveImageDir=QtGui.QFileDialog.getExistingDirectory()
+            print self.saveImageDir
             for j in arange(self.data.shape[0]):
-                  path=os.getcwd()+"/images/"+self.channelname[j]
+                  path=self.saveImageDir+"/"+self.channelname[j]
                   try:
-                        os.mkdir(path)
+                        os.makedirs(path)
                   except OSError:
                         path=path
                   for i in arange(self.data.shape[1]):
@@ -724,19 +805,60 @@ class Example(QtGui.QMainWindow):
 ##            iView=IView()
 ##            iView.show()
 ##            iView.setImage(sinogram)
+##      def sinogram(self):
+##            self.thickness=10
+##            self.sinoelement=self.sino.combo.currentIndex()
+##            sinodata=self.data[self.sinoelement,:,:,:]
+##            self.sinoz=self.data.shape[2]-9
+##            sinogram=zeros([self.sinoz,sinodata.shape[0]*self.thickness,sinodata.shape[2]],dtype=float32)
+##            for j in arange(self.sinoz):
+##                  sinoZ = j + 5
+##                  for i in arange(self.projections):
+##                        sinogram[j,i*self.thickness:(i+1)*self.thickness,:]=sinodata[i,sinoZ-self.thickness/2:sinoZ+self.thickness/2,:]
+##
+##            sinogram[isinf(sinogram)]=0.001
+##
+##            self.iView=IView()
+##            self.iView.show()
+##            self.iView.setImage(sinogram)
+##            self.iView.getShape()
+
+      def showSinogram(self):
+            self.sino = QSelect2()
+            self.sino.setWindowTitle("Sinogram Window")
+            self.sino.numb=len(self.channelname)
+            for j in arange(self.sino.numb):
+                  self.sino.combo.addItem(self.channelname[j])
+            self.sino.show()
+            self.sino.btn.clicked.connect(self.runCenterOfMass2)
+            self.sino.btn.setText("center of mass")
+            self.sino.btn2.clicked.connect(self.sinoShift)
+            self.sino.sld.setRange(5,self.y-5)
+            self.sino.lcd.display(5)
+            self.sino.sld.valueChanged.connect(self.sino.lcd.display)
+            self.sino.sld.valueChanged.connect(self.sinogram)
+            self.iView=IView()
+            self.iView.show()
+            self.sino.move(200,150)
+            self.iView.move(400,150)
+            
+
+            
       def sinogram(self):
             self.thickness=10
             self.sinoelement=self.sino.combo.currentIndex()
             sinodata=self.data[self.sinoelement,:,:,:]
-            sinogram=zeros([sinodata.shape[0]*self.thickness,sinodata.shape[2]],dtype=float32)
-            for i in arange(self.projections):
-                  sinogram[i*self.thickness:(i+1)*self.thickness,:]=sinodata[i,sinodata.shape[1]/2-self.thickness/2:sinodata.shape[1]/2+self.thickness/2,:]
-            sinogram[isinf(sinogram)]=1
+            self.sinogramData=zeros([sinodata.shape[0]*self.thickness,sinodata.shape[2]],dtype=float32)
 
-            self.iView=IView()
-            self.iView.show()
-            self.iView.setImage(sinogram)
+            for i in arange(self.projections):
+                  self.sinogramData[i*self.thickness:(i+1)*self.thickness,:]=sinodata[i,self.sino.sld.value()-self.thickness/2:self.sino.sld.value()+self.thickness/2,:]
+
+            self.sinogramData[isinf(self.sinogramData)]=0.001
+            self.iView.setImage(self.sinogramData)
             self.iView.getShape()
+            self.iView.setWindowTitle("Sinogram "+self.sino.combo.itemText(self.sinoelement)+" "+str(self.sino.sld.value()))
+
+
 
       def sinoShift(self):
             for i in arange(self.projections):
@@ -850,7 +972,8 @@ class QSelect2(QtGui.QWidget):
         
       def initUI(self):
  
-                  
+            self.sld=QtGui.QSlider(QtCore.Qt.Horizontal, self)
+            self.lcd=QtGui.QLCDNumber(self)
             self.combo = QtGui.QComboBox(self)
             self.btn = QtGui.QPushButton('Click2')
             self.btn.setText("Sinogram")
@@ -861,6 +984,8 @@ class QSelect2(QtGui.QWidget):
             vb.addWidget(self.combo)
             vb.addWidget(self.btn)
             vb.addWidget(self.btn2)
+            vb.addWidget(self.lcd)
+            vb.addWidget(self.sld)
             vb.addWidget(self.lbl)
             self.setLayout(vb)
 ####===================
@@ -882,8 +1007,8 @@ class QSelect3(QtGui.QWidget):
             self.btn.setText("Sinogram")
             self.lbl=QtGui.QLabel()
             self.lbl.setText("")
-            self.methodname=["mlem", "gridrec", "art"]
-            for k in arange(3):
+            self.methodname=["mlem", "gridrec", "art","pml"]
+            for k in arange(4):
                   self.method.addItem(self.methodname[k])
             vb = QtGui.QVBoxLayout()
             vb.addWidget(self.combo)

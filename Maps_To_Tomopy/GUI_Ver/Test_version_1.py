@@ -108,10 +108,7 @@ class Example(QtGui.QMainWindow):
 
             saveHotSpotPosAction = QtGui.QAction("Save Hot Spot Pos", self)
             saveHotSpotPosAction.triggered.connect(self.saveHotSpotPos)
-
-            alignHotSpotPosAction = QtGui.QAction("Align Hot Spot pos", self)
-            alignHotSpotPosAction.triggered.connect(self.alignHotSpotPos1)
-
+                                                 
             
             self.lbl=QtGui.QLabel()
             self.setCentralWidget(self.lbl)
@@ -153,7 +150,6 @@ class Example(QtGui.QMainWindow):
             toolbar.addAction(openFileAction)
             toolbar.addAction(openFolderAction)
             toolbar.addAction(saveHotSpotPosAction)
-            toolbar.addAction(alignHotSpotPosAction)
             toolbar.addAction(exportDataAction)
             toolbar.addAction(runTransRecAction)
             toolbar.addAction(runCenterOfMassAction)
@@ -207,7 +203,7 @@ class Example(QtGui.QMainWindow):
 
             
       def fitCenterOfMass(self):
-            x=self.theta
+            x=arange(self.projections)*6
             self.fitfunc = lambda p,x: p[0]*sin(2*pi/360*(x-p[1]))+p[2]
             self.errfunc = lambda p,x,y: self.fitfunc(p,x)-y
             p0=[100,100,100]
@@ -415,34 +411,14 @@ class Example(QtGui.QMainWindow):
       def saveHotSpotPos(self):
             self.projView = IView()
             self.projView.show()
-            self.projView.data=self.data[28,:,:,:]
-            self.projView.posMat=zeros([self.data.shape[1],2])
-            self.projView.setImage(self.data[28,0,:,:])
-            
-      def alignHotSpotPos1(self):
-            
-            for i in arange(self.projections-1):
-                  print "shifted"
-                  
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,0]-self.projView.posMat[i+1,0])), axis=2)
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,1]-self.projView.posMat[i+1,1])), axis=1)            
+            self.nextHotSpotNumb=1
+            while self.projView.hotSpotNumb<self.projections:
+                  if self.nextHotSpotNumb==self.projView.hotSpotNumb:
+                        self.showNextProj()
+      def showNextProj(self):
+            self.projView.setImage(self.data[27,self.projView.hotSpotNumb,:,:])
+            self.nextHotSpotNumb+=1
 
-      def alignHotSpotPos2(self):
-            for i in arange(self.projections-1):
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,1]-self.projView.posMat[i+1,1])), axis=1)     
-            x=self.theta
-            self.fitfunc = lambda p,x: p[0]*sin(2*pi/360*(x-p[1]))+p[2]
-            self.errfunc = lambda p,x,y: self.fitfunc(p,x)-y
-            p0=[100,100,100]
-            self.p1,success = optimize.leastsq(self.errfunc,p0[:],args=(x,self.projView.posMat[:,0]))
-            self.hotSpotPosDiff=self.fitfunc(self.p1,x)-self.projView.posMat[:,0]
-
-            for i in arange(self.projections):
-                  self.xshift[i]=int(self.hotSpotPosDiff[i])
-                  self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.xshift[i], axis=2)
-            self.lbl.setText("Alignment has been completed")
-            
-            
 #==========================
       def export_data(self):
             a=h5py.File("export_data.h5")
@@ -508,7 +484,7 @@ class Example(QtGui.QMainWindow):
             elif self.recon.method.currentIndex()==2:
                   self.d.dataset(self.d.data, theta=self.theta*np.pi/180)
                   #self.d.optimize_center()
-                  self.d.pml()
+                  self.d.art()
             print self.d.center
             pg.image(self.d.data_recon)
             self.recon.lbl.setText("Done")
@@ -930,15 +906,9 @@ class IView(pg.ImageView):
                   self.regShift[self.numb2]+=self.shiftnumb
 
             if ev.key() == QtCore.Qt.Key_N:
-                  print "n"
-                  print self.data.shape[0], self.hotSpotNumb
-                  print self.imageItem.iniX, self.imageItem.iniY
-                  self.posMat[self.hotSpotNumb,0]=self.imageItem.iniY
-                  self.posMat[self.hotSpotNumb,1]=self.imageItem.iniX
-                  if self.hotSpotNumb<self.data.shape[0]-1:
-                        self.hotSpotNumb+=1
-                        self.setImage(self.data[self.hotSpotNumb,:,:])
-                        
+                  self.setImage(data[self.hotSpotNumb,:,:])
+                  self.hotSpotNumb+=1
+                  
                   
       def getMousePos(self):
             numb=self.imageItem.iniX

@@ -1,4 +1,4 @@
-tomo_dataset_000.h5, 15, 0
+tomo_dataset_000.h5, 4, 0
 tomo_dataset_006.h5, 8, 0
 tomo_dataset_012.h5, 5, 0
 tomo_dataset_018.h5, -2, 0
