@@ -555,6 +555,9 @@ class Example(QtGui.QMainWindow):
                   self.projViewControl.combo.addItem(self.channelname[j])
             self.projViewControl.combo.currentIndexChanged.connect(self.saveHotSpotPos)
             self.projViewControl.btn.clicked.connect(self.alignHotSpotPos3)
+            self.projViewControl.btn2.clicked.connect(self.alignHotSpotPos4)
+            self.testtest=pg.ImageView()
+            
 
       def saveHotSpotPos(self):
             self.projViewElement = self.projViewControl.combo.currentIndex()
@@ -587,7 +590,7 @@ class Example(QtGui.QMainWindow):
             
       def alignHotSpotPos3(self):
             #self.projView.data2=self.data[7,:,:,:]
-            self.boxSize=40
+            self.boxSize=30
             self.boxSize2=self.boxSize/2
             self.xPos=zeros(self.projections)
             self.yPos=zeros(self.projections)
@@ -596,17 +599,59 @@ class Example(QtGui.QMainWindow):
                   
                   self.xPos[i]=int(round(self.projView.posMat[i,0]))
                   self.yPos[i]=int(round(self.projView.posMat[i,1]))
+
+                  if self.yPos[i]<self.boxSize2:
+                        self.yPos[i]=self.boxSize2
+                  if self.yPos[i]>self.projView.data.shape[1]-self.boxSize2:
+                        self.yPos[i]=self.projView.data.shape[1]-self.boxSize2
+                  if self.xPos[i]<self.boxSize2:
+                        self.xPos[i]=self.boxSize2
+                  if self.xPos[i]>self.projView.data.shape[2]-self.boxSize2:
+                        self.xPos[i]=self.projView.data.shape[2]-self.boxSize2
                   #self.boxPos[i,:,:]=self.projView.data[i,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2]
                   self.boxPos[i,:,:]=self.projView.data[i,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2]
             print self.boxPos.shape
 
-            for i in arange(self.projections):
-                  j=Image.fromarray(self.boxPos[i,:,:].astype(np.float32))
-                  
-                  j.save("/Users/youngpyohong/Documents/Work/Python/2dfit/"+str(i)+".tif")
+##            for i in arange(self.projections):
+##                  j=Image.fromarray(self.boxPos[i,:,:].astype(np.float32))
+##                  
+##                  j.save("/Users/youngpyohong/Documents/Work/Python/2dfit/"+str(i)+".tif")
             pg.image(self.boxPos)
-            self.testtest=pg.ImageView()
+
             self.alignHotSpotPos3_3()
+            print "hotspot done"
+
+      def alignHotSpotPos4(self):
+            #self.projView.data2=self.data[7,:,:,:]
+            self.boxSize=30
+            self.boxSize2=self.boxSize/2
+            self.xPos=zeros(self.projections)
+            self.yPos=zeros(self.projections)
+            self.boxPos=zeros([self.projections,self.boxSize,self.boxSize])
+            for i in arange(self.projections):
+                  
+                  self.xPos[i]=int(round(self.projView.posMat[i,0]))
+                  self.yPos[i]=int(round(self.projView.posMat[i,1]))
+
+                  if self.yPos[i]<self.boxSize2:
+                        self.yPos[i]=self.boxSize2
+                  if self.yPos[i]>self.projView.data.shape[1]-self.boxSize2:
+                        self.yPos[i]=self.projView.data.shape[1]-self.boxSize2
+                  if self.xPos[i]<self.boxSize2:
+                        self.xPos[i]=self.boxSize2
+                  if self.xPos[i]>self.projView.data.shape[2]-self.boxSize2:
+                        self.xPos[i]=self.projView.data.shape[2]-self.boxSize2
+                  #self.boxPos[i,:,:]=self.projView.data[i,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2]
+                  self.boxPos[i,:,:]=self.projView.data[i,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2]
+            print self.boxPos.shape
+
+##            for i in arange(self.projections):
+##                  j=Image.fromarray(self.boxPos[i,:,:].astype(np.float32))
+##                  
+##                  j.save("/Users/youngpyohong/Documents/Work/Python/2dfit/"+str(i)+".tif")
+            pg.image(self.boxPos)
+            
+            self.alignHotSpotPos3_4()
 
       def alignHotSpotPos3_1(self):
             self.newBoxPos=zeros(self.boxPos.shape)
@@ -645,10 +690,10 @@ class Example(QtGui.QMainWindow):
                   self.newBoxPos[i+1,:,:]=np.roll(self.boxPos[i+1,:,:],40-t0,axis=0)
                   self.newBoxPos[i+1,:,:]=np.roll(self.boxPos[i+1,:,:],40-t1,axis=1)
                   print t0, t1
-            self.testtest=pg.ImageView()
-            self.testtest.setWindowTitle("rhyme")
-            self.testtest.setImage(self.newBoxPos)
-            self.testtest.show()
+##            self.testtest=pg.ImageView()
+##            self.testtest.setWindowTitle("rhyme")
+##            self.testtest.setImage(self.newBoxPos)
+##            self.testtest.show()
 
       def alignHotSpotPos3_3(self):
             self.hotSpotX=zeros(self.projections)
@@ -674,12 +719,70 @@ class Example(QtGui.QMainWindow):
                   print xshift,yshift
             for i in arange(self.projections-1):
                   j=i+1
-                  yyshift=int(round(self.hotSpotY[0]-self.hotSpotY[j]-self.yPos[j]+self.yPos[0]))
-                  xxshift=int(round(self.hotSpotX[0]-self.hotSpotX[j]-self.xPos[j]+self.xPos[0]))
+                  yyshift=int(round(self.boxSize2-self.hotSpotY[j]-self.yPos[j]+self.yPos[0]))
+                  xxshift=int(round(self.boxSize2-self.hotSpotX[j]-self.xPos[j]+self.xPos[0]))
                   print xxshift, yyshift
                   self.data[:,j,:,:]=np.roll(np.roll(self.data[:,j,:,:],xxshift,axis=2),
                                              yyshift,axis=1)
-            
+                  for l in arange(self.data.shape[0]):
+                        if yyshift>0:
+                              self.data[l,j,:yyshift,:]=ones(self.data[l,j,:yyshift,:].shape)*self.data[l,j,:yyshift,:].mean()/2
+                        if yyshift<0:
+                              self.data[l,j,yyshift:,:]=ones(self.data[l,j,yyshift:,:].shape)*self.data[l,j,-yyshift:,:].mean()/2
+                        if xxshift>0:
+                              self.data[l,j,:,:xxshift]=ones(self.data[l,j,:,:xxshift].shape)*self.data[l,j,:xxshift,:].mean()/2
+                        if xxshift<0:
+                              self.data[l,j,:,xxshift:]=ones(self.data[l,j,:,xxshift:].shape)*self.data[l,j,-xxshift:,:].mean()/2
+
+                                                                                
+                  
+            self.p1[2]=self.xPos[0]
+            self.testtest.setWindowTitle("rhyme")
+            self.testtest.setImage(self.newBoxPos)
+            self.testtest.show()
+            print "align done"
+
+      def alignHotSpotPos3_4(self):
+            self.hotSpotX=zeros(self.projections)
+            self.hotSpotY=zeros(self.projections)
+            self.newBoxPos=zeros(self.boxPos.shape)
+            self.newBoxPos[...]=self.boxPos[...]
+            ### need to change x and y's
+            for i in arange(self.projections):
+                  img=self.boxPos[i,:,:]
+                  print img.shape
+                  a,x,y,b,c=self.fitgaussian(img)
+                  self.hotSpotY[i]=x
+                  self.hotSpotX[i]=y
+                  yshift=int(round(self.hotSpotY[0]-self.hotSpotY[i])) 
+                  xshift=int(round(self.hotSpotX[0]-self.hotSpotX[i]))
+                  self.newBoxPos[i,:,:]=np.roll(self.newBoxPos[i,:,:],xshift,axis=1)
+                  self.newBoxPos[i,:,:]=np.roll(self.newBoxPos[i,:,:],yshift ,axis=0)
+##                  subplot(211)
+##                  plt.imshow(self.boxPos[i,:,:])
+##                  subplot(212)
+##                  plt.imshow(self.newBoxPos[i,:,:])
+##                  show()
+                  print xshift,yshift
+
+            hotspotXPos=zeros(self.projections)
+            hotspotYPos=zeros(self.projections)
+            for i in arange(self.projections):
+                  hotspotYPos[i]=int(round(self.yPos[i]))
+                  hotspotXPos[i]=int(round(self.xPos[i]))
+                  print hotspotXPos, hotspotYPos
+
+            ## xfit
+            self.theta=self.theta[:self.projections]
+            self.com=hotspotXPos
+            self.fitCenterOfMass()
+            self.alignCenterOfMass()
+
+            ## yfit
+            for i in arange(self.projections):
+                  self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], int(hotspotYPos[0])-int(hotspotYPos[i]),axis=1)
+                  print int(hotspotYPos[0])-int(hotspotYPos[i])
+                        
             self.testtest.setWindowTitle("rhyme")
             self.testtest.setImage(self.newBoxPos)
             self.testtest.show()
@@ -747,9 +850,15 @@ class Example(QtGui.QMainWindow):
                   self.recon.combo.addItem(self.channelname[j])
             self.recon.show()
             self.recon.btn.setText("Reconstruction")
+            self.recon.sld.setRange(5,self.y-5)
+            self.recon.sld.valueChanged.connect(self.recon.lcd.display)
+            self.recon.sld.valueChanged.connect(self.reconCenter)
             self.recon.btn.clicked.connect(self.reconstruct)
             self.recon.save.clicked.connect(self.saveRecTiff)
             self.recon.reconvalue=0
+
+      def reconCenter(self):
+            self.p1[2]=self.recon.sld.value()
             
       def reconstruct(self):
             self.recon.lbl.setText("Reconstruction is currently running")
@@ -758,7 +867,7 @@ class Example(QtGui.QMainWindow):
             self.d.data=self.data[self.reconelement,:,:,:]
             self.d.data[self.d.data==inf]=0.01
             self.d.data[np.isnan(self.d.data)]=0.01
-
+            
             ###TEMP
             if self.recon.reconvalue==0:
                   self.d.data = (np.exp(-0.0001*self.d.data)).astype('float32')
@@ -767,6 +876,8 @@ class Example(QtGui.QMainWindow):
             #self.d.center=128
             ###TEMP
             self.d.center=self.p1[2]
+            self.d.theta=self.theta
+
             if self.recon.method.currentIndex()==0:
                   self.d.dataset(self.d.data, theta=self.theta*np.pi/180)
                   #self.d.optimize_center()
@@ -870,11 +981,11 @@ class Example(QtGui.QMainWindow):
             for i in arange(len(self.fileNames)):
                   self.fileNames[i]=str(self.fileNames[i])
                   f = h5py.File(os.path.abspath(self.fileNames[i]),"r")
-                  thetatemp = f["MAPS"]["extra_pvs_as_csv"][self.thetaPos]
-                  thetapos = string.rfind(thetatemp, ",")
-                  theta = str(round(float(thetatemp[thetapos+1:])))
+                  #thetatemp = f["MAPS"]["extra_pvs_as_csv"][self.thetaPos]
+                  #thetapos = string.rfind(thetatemp, ",")
+                  #theta = str(round(float(thetatemp[thetapos+1:])))
                   onlyfilename=self.fileNames[i].rfind("_")
-                  self.filecheck.button[i].setText(self.fileNames[i][onlyfilename+1:]+" ("+theta+degree_sign+")")
+                  self.filecheck.button[i].setText(self.fileNames[i][onlyfilename+1:])
                   self.filecheck.button[i].setChecked(True)
             self.ImageTag=f.items()[-1][0]
             self.lbl.setText("Image Tag has been set to \""+self.ImageTag+"\"")
@@ -933,7 +1044,7 @@ class Example(QtGui.QMainWindow):
             f=h5py.File(os.path.abspath(self.selectedFiles[0]),"r")
             self.channelname=f[self.ImageTag]["channel_names"]
 
-            self.channels,self.y,self.x=f[self.ImageTag]["data"].shape
+            self.channels,self.y,self.x=f[self.ImageTag]["XRF_fits"].shape
             self.projections=len(self.selectedFiles)
             self.theta= zeros(self.projections)
             self.data=zeros([self.channels,self.projections,self.y,self.x])
@@ -947,12 +1058,11 @@ class Example(QtGui.QMainWindow):
             for i in arange(self.projections):
                   file_name = os.path.abspath(self.selectedFiles[i])
                   f = h5py.File(file_name,"r")
-                  thetatemp=f["MAPS"]["extra_pvs_as_csv"][self.thetaPos]
 
-                  self.theta[i] = float(thetatemp[thetatemp.rfind(",")+3:])
                   
                   for j in arange(self.channels):
-                        self.data[j,i,:,:-2]=f[self.ImageTag]["data"][j,:,:-2]
+                        data=f[self.ImageTag]["XRF_fits"][j,:,:-2]
+                        self.data[j,i,:data.shape[0],:data.shape[1]]=data
                   print i+1, "projection(s) has/have been converted"
             print "worked"
 
@@ -973,6 +1083,11 @@ class Example(QtGui.QMainWindow):
             self.viewProjections()
             self.runReconstruct()
             self.showSaveHotSpotPos()
+
+            self.theta=array([-75, -60, -57, -54, -51, -48, -42,-39, -36, -33,-30, -27, -24, -21, -18,
+                              -15,0,3,6,9,12,15,18,21,24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60,
+                              63, 66, 69, 72])
+            self.theta=self.theta[1:]
             
 #            yy=self.data
 #            yy[isinf(yy)]=1
@@ -984,7 +1099,7 @@ class Example(QtGui.QMainWindow):
             self.saveImageDir=QtGui.QFileDialog.getExistingDirectory()
             print self.saveImageDir
             for j in arange(self.data.shape[0]):
-                  path=self.saveImageDir+"/"+self.channelname[j]
+                  path=str(self.saveImageDir)+"/"+self.channelname[j]
                   try:
                         os.makedirs(path)
                   except OSError:
@@ -1085,7 +1200,7 @@ class Example(QtGui.QMainWindow):
       def sinoShift(self):
             for i in arange(self.projections):
                   
-                  self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.iView.regShift[i], axis=2)
+                  self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.sinoView.regShift[i], axis=2)
             
             
 
@@ -1227,6 +1342,8 @@ class QSelect3(QtGui.QWidget):
             self.save = QtGui.QPushButton("Save tiff files")
             self.save.setHidden(True)
             self.btn.setText("Sinogram")
+            self.sld=QtGui.QSlider(QtCore.Qt.Horizontal, self)
+            self.lcd=QtGui.QLCDNumber(self)
             self.lbl=QtGui.QLabel()
             self.lbl.setText("")
             self.methodname=["mlem", "gridrec", "art","pml"]
@@ -1237,6 +1354,8 @@ class QSelect3(QtGui.QWidget):
             vb.addWidget(self.method)
             vb.addWidget(self.btn)
             vb.addWidget(self.save)
+            vb.addWidget(self.lcd)
+            vb.addWidget(self.sld)
             vb.addWidget(self.lbl)
             self.setLayout(vb)
 
@@ -1265,6 +1384,7 @@ class QSelect4(QtGui.QWidget):
             hb2.addWidget(self.lbl22)
             self.combo = QtGui.QComboBox(self)
             self.btn=QtGui.QPushButton("Draw boxes")
+            self.btn2=QtGui.QPushButton("Draw -> Sino")
 ##            self.btn = QtGui.QPushButton('Click2')
 ##            self.btn.setText("Sinogram")
 ##            self.btn2 = QtGui.QPushButton("shift data")
@@ -1279,6 +1399,7 @@ class QSelect4(QtGui.QWidget):
             vb.addLayout(hb1)
             vb.addLayout(hb2)
             vb.addWidget(self.btn)
+            vb.addWidget(self.btn2)
 ##            vb.addWidget(self.lbl)
             self.setLayout(vb)
 
