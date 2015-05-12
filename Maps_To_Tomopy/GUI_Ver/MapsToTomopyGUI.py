@@ -501,7 +501,6 @@ class Example(QtGui.QMainWindow):
 ##                  f.write(str(shift)+ "\n")
 ##                  print i
 ##            f.close()
-
       def alignFromText(self):
             try:
                   fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File",
@@ -523,6 +522,9 @@ class Example(QtGui.QMainWindow):
                                     self.xshift[i]+=int(float(read[j][firstcol+1:secondcol]))
                                     self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],self.xshift[i],axis=2)
                                     self.data[:,i,:,:]=np.roll(self.data[:,i,:,:],self.yshift[i],axis=1)
+                              if string.find(read[j],"rotation axis")!=-1:
+                                    commapos=read[j].rfind(",")
+                                    self.p1[2]=float(read[j][commapos+1:-1])
             
                   f.close()
 
@@ -536,13 +538,17 @@ class Example(QtGui.QMainWindow):
                   self.alignFileName = QtGui.QFileDialog.getSaveFileName()
                   print str(self.alignFileName)
                   f=open(self.alignFileName,"w")
+                  f.writelines("rotation axis, "+ str(self.p1[2])+"\n")
                   for i in arange(self.projections):
                         onlyfilename=self.selectedFiles[i].rfind("/")
                         print self.selectedFiles[i]
                         f.writelines(self.selectedFiles[i][onlyfilename+1:]+", "+str(self.xshift[i])+", "+str(self.yshift[i])+ "\n")
+                        
                   f.close()
             except IOError:
                   print "choose file please"
+                  
+
                         
 
 #==========================
@@ -947,10 +953,10 @@ class Example(QtGui.QMainWindow):
                   self.yshift[i]+=int(hotspotYPos[self.hotspotProj[0]])-int(hotspotYPos[i])
                   self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.yshift[i],axis=1)
                   print int(hotspotYPos[0])-int(hotspotYPos[i])
-                        
-            self.testtest.setWindowTitle("Time")
-            self.testtest.setImage(self.newBoxPos)
-            self.testtest.show()
+
+            print dir(self.recon.sld)
+            print help(self.recon.sld.value)
+            self.recon.sld.setValue(self.p1[2])
             
 #==========================
 ## This is for Image processing tab
