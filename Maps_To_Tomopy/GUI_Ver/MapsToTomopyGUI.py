@@ -644,7 +644,7 @@ class Example(QtGui.QMainWindow):
             1
 #########
       def boxSizeChange(self):
-            self.boxSize=self.projViewControl.sld.value()
+            self.boxSize=self.projViewControl.sld.value()/2*2
             self.projView.ROI.setPos([self.projView.projView.iniX-self.boxSize/2,self.projView.projView.iniY-self.boxSize/2])
             self.projView.ROI.setSize([self.boxSize,self.boxSize])
             self.projView.xSize=self.boxSize
@@ -716,8 +716,8 @@ class Example(QtGui.QMainWindow):
 ##                  j=Image.fromarray(self.boxPos[i,:,:].astype(np.float32))
 ##                  
 ##                  j.save("/Users/youngpyohong/Documents/Work/Python/2dfit/"+str(i)+".tif")
-            pg.image(self.boxPos)
-            print "okay here"
+
+
             self.alignHotSpotPos3_3()
             print "hotspot done"
 
@@ -752,8 +752,7 @@ class Example(QtGui.QMainWindow):
 ##                  j=Image.fromarray(self.boxPos[i,:,:].astype(np.float32))
 ##                  
 ##                  j.save("/Users/youngpyohong/Documents/Work/Python/2dfit/"+str(i)+".tif")
-            pg.image(self.boxPos)
-            print "okay here"
+
             self.alignHotSpotPos3_4()
             print "hotspot done"
 
@@ -861,9 +860,7 @@ class Example(QtGui.QMainWindow):
                                                                                 
                   
             self.p1[2]=self.xPos[0]
-            self.testtest.setWindowTitle("rhy-me")
-            self.testtest.setImage(self.newBoxPos)
-            self.testtest.show()
+
             print "align done"
 
       def alignHotSpotPos3_4(self):
@@ -1982,7 +1979,7 @@ class IView2(pg.GraphicsLayoutWidget):
 ##                  self.ROI.setPos([self.projView.iniX-10,self.projView.iniY-10])
             if ev.key() == QtCore.Qt.Key_N:
                   print "n"
-                  print self.data.shape[0], self.hotSpotNumb+1,self.hotSpotSetNumb
+                  print "Total projections",self.data.shape[0], "current position",self.hotSpotNumb+1,"group number",  self.hotSpotSetNumb+1
                   self.posMat[self.hotSpotSetNumb,self.hotSpotNumb,0]=self.projView.iniY
                   self.posMat[self.hotSpotSetNumb,self.hotSpotNumb,1]=self.projView.iniX
                   if self.hotSpotNumb<self.data.shape[0]:
