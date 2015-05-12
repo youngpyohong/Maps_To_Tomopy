@@ -438,6 +438,8 @@ class Example(QtGui.QMainWindow):
             self.xcor.save.clicked.connect(self.restore)
             self.xcor.show()
       def restore(self):
+            self.xshift=zeros(self.projections,int)
+            self.yshift=zeros(self.projections,int)
             self.data=zeros(self.oldData.shape)
             self.data[...]=self.oldData[...]
       def prexCor(self):
@@ -1204,7 +1206,7 @@ class Example(QtGui.QMainWindow):
             self.sit.combo.currentIndexChanged.connect(self.selectImageTag_image)
             self.sit.btn.setText("Set")
 
-            self.sit.btn.clicked.conneect(self.setImageTag)
+            self.sit.btn.clicked.connect(self.setImageTag)
             self.sit.show()
 
       def selectImageTag_image(self):
@@ -1367,13 +1369,12 @@ class Example(QtGui.QMainWindow):
                               self.data[j,i,:,:]=f[self.ImageTag][self.dataTag][j,:,:-2]
                               if i==self.projections-1:
                                     self.channelname.append(f[self.ImageTag]["channel_names"][j])
-                        for k in arange(self.channels-self.channels1):
-                              self.data[j+k,i,:,:]=f[self.ImageTag]["scalers"][k,:,:-2]
-                              if i==self.projections-1:
-                                    self.channelname.append(f[self.ImageTag]["scaler_names"][k])
+##                        for k in arange(self.channels-self.channels1):
+##                              self.data[j+k,i,:,:]=f[self.ImageTag]["scalers"][k,:,:-2]
+##                              if i==self.projections-1:
+##                                    self.channelname.append(f[self.ImageTag]["scaler_names"][k])
                         print i+1, "projection(s) has/have been converted"
                   print "worked"
-
 
             
 
@@ -1383,6 +1384,10 @@ class Example(QtGui.QMainWindow):
 
             ######
 
+            global gldata
+            gldata=self.data
+            temp=self.data[20,:,:,:]
+            temp[np.where(temp>5000)]=5000
             #self.data=self.data*900
             ######
 
