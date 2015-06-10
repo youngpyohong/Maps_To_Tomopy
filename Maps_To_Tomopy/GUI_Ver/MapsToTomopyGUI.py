@@ -51,7 +51,10 @@ class Example(QtGui.QMainWindow):
 
             openFolderAction = QtGui.QAction('Open Folder', self)
             openFolderAction.triggered.connect(self.openfolder)
-
+            
+            openTiffFolderAction = QtGui.QAction("Open Tiff Folder", self)
+            openTiffFolderAction.triggered.connect(self.openTiffFolder)
+            
             sinogramAction = QtGui.QAction('Sinogram', self)
             sinogramAction.triggered.connect(self.sinogram)
 
@@ -153,6 +156,7 @@ class Example(QtGui.QMainWindow):
             fileMenu = menubar.addMenu('&File')
             fileMenu.addAction(openFileAction)
             fileMenu.addAction(openFolderAction)
+            fileMenu.addAction(openTiffFolderAction)
             fileMenu.addAction(readConfigAction)
             fileMenu.addAction(exitAction)
 
@@ -198,7 +202,7 @@ class Example(QtGui.QMainWindow):
             toolbar.addAction(showSinogramAction)
             toolbar.setVisible(False)
   
-            self.setGeometry(0,0, 1000,500)
+            self.setGeometry(0,0, 1100,500)
             self.setWindowTitle('Maps_To_Tomopy')    
             self.show()
 
@@ -276,6 +280,7 @@ class Example(QtGui.QMainWindow):
 
       def createReconWidget(self):
             self.recon = QSelect3()
+            self.recon.sld.setVisible(False)
             self.reconView = pg.ImageView()
 
             reconBox = QtGui.QHBoxLayout()
@@ -283,6 +288,7 @@ class Example(QtGui.QMainWindow):
             reconBox.addWidget(self.reconView,10)
             reconGroup=QtGui.QGroupBox("Reconstruction")
             reconGroup.setLayout(reconBox)
+
 
             return reconGroup
 
@@ -300,7 +306,7 @@ class Example(QtGui.QMainWindow):
 
       def createSaveHotspotWidget(self):
             self.projViewControl = QSelect4()
-            self.projView=IView2()
+            self.projView=IView3()
             self.boxSize=20
 
             projViewBox = QtGui.QHBoxLayout()
@@ -312,7 +318,7 @@ class Example(QtGui.QMainWindow):
 
       def createImageProcessWidget(self):
             self.imgProcessControl = imageProcess()
-            self.imgProcess = IView2()
+            self.imgProcess = IView3()
 
             imgProcessBox = QtGui.QHBoxLayout()
             imgProcessBox.addWidget(self.imgProcessControl)
@@ -536,6 +542,8 @@ class Example(QtGui.QMainWindow):
 
             try:
                   self.alignFileName = QtGui.QFileDialog.getSaveFileName()
+                  if string.rfind(str(self.alignFileName),".txt")==-1:
+                        self.alignFileName=str(self.alignFileName)+".txt"
                   print str(self.alignFileName)
                   f=open(self.alignFileName,"w")
                   f.writelines("rotation axis, "+ str(self.p1[2])+"\n")
@@ -651,41 +659,42 @@ class Example(QtGui.QMainWindow):
 #########
       def boxSizeChange(self):
             self.boxSize=self.projViewControl.sld.value()/2*2
-            self.projView.ROI.setPos([self.projView.projView.iniX-self.boxSize/2,self.projView.projView.iniY-self.boxSize/2])
-            self.projView.ROI.setSize([self.boxSize,self.boxSize])
-            self.projView.xSize=self.boxSize
-            self.projView.ySize=self.boxSize
+            self.projView.view.ROI.setPos([self.projView.view.projView.iniX-self.boxSize/2,self.projView.view.projView.iniY-self.boxSize/2])
+            self.projView.view.ROI.setSize([self.boxSize,self.boxSize])
+            self.projView.view.xSize=self.boxSize
+            self.projView.view.ySize=self.boxSize
       def hotSpotSetChanged(self):
-            self.projView.hotSpotSetNumb=self.projViewControl.combo2.currentIndex()
+            self.projView.view.hotSpotSetNumb=self.projViewControl.combo2.currentIndex()
 
       def nextHotSpotPos(self):
             #self.projView.hotSpotNumb=self.projViewControl.sld.value()
-            self.projView.projView.setImage(self.data[self.projViewElement,self.projView.hotSpotNumb,:,:])
+            self.projView.view.projView.setImage(self.data[self.projViewElement,self.projView.hotSpotNumb,:,:])
+
             
       def saveHotSpotPos(self):
-            self.projView.hotSpotNumb=0
+            self.projView.view.hotSpotNumb=0
             self.projViewElement = self.projViewControl.combo.currentIndex()
-            self.projView.data=self.data[self.projViewElement,:,:,:]
-            self.projView.posMat=zeros([5,self.data.shape[1],2]) ## Later change 5 -> how many data are in the combo box.
-            self.projView.projView.setImage(self.data[self.projViewElement,0,:,:])
+            self.projView.view.data=self.data[self.projViewElement,:,:,:]
+            self.projView.view.posMat=zeros([5,self.data.shape[1],2]) ## Later change 5 -> how many data are in the combo box.
+            self.projView.view.projView.setImage(self.data[self.projViewElement,0,:,:])
             
       def alignHotSpotPos1(self):
             
             for i in arange(self.projections-1):
                   print "shifted"
                   
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,0]-self.projView.posMat[i+1,0])), axis=2)
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,1]-self.projView.posMat[i+1,1])), axis=1)            
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.view.posMat[0,0]-self.projView.view.posMat[i+1,0])), axis=2)
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.view.posMat[0,1]-self.projView.view.posMat[i+1,1])), axis=1)            
 
       def alignHotSpotPos2(self):
             for i in arange(self.projections-1):
-                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.posMat[0,1]-self.projView.posMat[i+1,1])), axis=1)     
+                  self.data[:,i+1,:,:]=np.roll(self.data[:,i+1,:,:], int(round(self.projView.view.posMat[0,1]-self.projView.view.posMat[i+1,1])), axis=1)     
             x=self.theta
             self.fitfunc = lambda p,x: p[0]*sin(2*pi/360*(x-p[1]))+p[2]
             self.errfunc = lambda p,x,y: self.fitfunc(p,x)-y
             p0=[100,100,100]
-            self.p1,success = optimize.leastsq(self.errfunc,p0[:],args=(x,self.projView.posMat[:,0]))
-            self.hotSpotPosDiff=self.fitfunc(self.p1,x)-self.projView.posMat[:,0]
+            self.p1,success = optimize.leastsq(self.errfunc,p0[:],args=(x,self.projView.view.posMat[:,0]))
+            self.hotSpotPosDiff=self.fitfunc(self.p1,x)-self.projView.view.posMat[:,0]
 
             for i in arange(self.projections):
                   self.xshift[i]+=int(self.hotSpotPosDiff[i])
@@ -701,20 +710,20 @@ class Example(QtGui.QMainWindow):
             hotSpotSet=self.projViewControl.combo2.currentIndex()
             for i in arange(self.projections):
                   
-                  self.xPos[i]=int(round(self.projView.posMat[hotSpotSet,i,0]))
-                  self.yPos[i]=int(round(self.projView.posMat[hotSpotSet,i,1]))
+                  self.xPos[i]=int(round(self.projView.view.posMat[hotSpotSet,i,0]))
+                  self.yPos[i]=int(round(self.projView.view.posMat[hotSpotSet,i,1]))
             
                   if self.xPos[i]!=0 and self.yPos[i]!=0:
                         if self.yPos[i]<self.boxSize2:
                               self.yPos[i]=self.boxSize2
-                        if self.yPos[i]>self.projView.data.shape[1]-self.boxSize2:
-                              self.yPos[i]=self.projView.data.shape[1]-self.boxSize2
+                        if self.yPos[i]>self.projView.view.data.shape[1]-self.boxSize2:
+                              self.yPos[i]=self.projView.view.data.shape[1]-self.boxSize2
                         if self.xPos[i]<self.boxSize2:
                               self.xPos[i]=self.boxSize2
-                        if self.xPos[i]>self.projView.data.shape[2]-self.boxSize2:
-                              self.xPos[i]=self.projView.data.shape[2]-self.boxSize2
+                        if self.xPos[i]>self.projView.view.data.shape[2]-self.boxSize2:
+                              self.xPos[i]=self.projView.view.data.shape[2]-self.boxSize2
                         #self.boxPos[i,:,:]=self.projView.data[i,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2]
-                        self.boxPos[i,:,:]=self.projView.data[i,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2]
+                        self.boxPos[i,:,:]=self.projView.view.data[i,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2]
             print self.boxPos.shape
 
 
@@ -736,20 +745,20 @@ class Example(QtGui.QMainWindow):
             hotSpotSet=self.projViewControl.combo2.currentIndex()
             for i in arange(self.projections):
                   
-                  self.xPos[i]=int(round(self.projView.posMat[hotSpotSet,i,0]))
-                  self.yPos[i]=int(round(self.projView.posMat[hotSpotSet,i,1]))
+                  self.xPos[i]=int(round(self.projView.view.posMat[hotSpotSet,i,0]))
+                  self.yPos[i]=int(round(self.projView.view.posMat[hotSpotSet,i,1]))
             
                   if self.xPos[i]!=0 and self.yPos[i]!=0:
                         if self.yPos[i]<self.boxSize2:
                               self.yPos[i]=self.boxSize2
-                        if self.yPos[i]>self.projView.data.shape[1]-self.boxSize2:
-                              self.yPos[i]=self.projView.data.shape[1]-self.boxSize2
+                        if self.yPos[i]>self.projView.view.data.shape[1]-self.boxSize2:
+                              self.yPos[i]=self.projView.view.data.shape[1]-self.boxSize2
                         if self.xPos[i]<self.boxSize2:
                               self.xPos[i]=self.boxSize2
-                        if self.xPos[i]>self.projView.data.shape[2]-self.boxSize2:
-                              self.xPos[i]=self.projView.data.shape[2]-self.boxSize2
+                        if self.xPos[i]>self.projView.view.data.shape[2]-self.boxSize2:
+                              self.xPos[i]=self.projView.view.data.shape[2]-self.boxSize2
                         #self.boxPos[i,:,:]=self.projView.data[i,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2]
-                        self.boxPos[i,:,:]=self.projView.data[i,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2]
+                        self.boxPos[i,:,:]=self.projView.view.data[i,self.yPos[i]-self.boxSize2:self.yPos[i]+self.boxSize2,self.xPos[i]-self.boxSize2:self.xPos[i]+self.boxSize2]
             print self.boxPos.shape
             print self.xPos, self.yPos
 
@@ -954,8 +963,6 @@ class Example(QtGui.QMainWindow):
                   self.data[:,i,:,:]=np.roll(self.data[:,i,:,:], self.yshift[i],axis=1)
                   print int(hotspotYPos[0])-int(hotspotYPos[i])
 
-            print dir(self.recon.sld)
-            print help(self.recon.sld.value)
             self.recon.sld.setValue(self.p1[2])
             
 #==========================
@@ -981,6 +988,9 @@ class Example(QtGui.QMainWindow):
             self.imgProcessControl.delHotspotBtn.clicked.connect(self.ipDelHotspot)
             self.imgProcessControl.normalizeBtn.clicked.connect(self.ipNormalize)
             self.imgProcessControl.cutBtn.clicked.connect(self.ipCut)
+            self.imgProcessControl.gaussian33Btn.clicked.connect(self.gaussian33)
+            self.imgProcessControl.gaussian33Btn.clicked.connect(self.gaussian55)
+            
 ##            self.projViewControl.sld.setValue(20)
 ##            self.projViewControl.sld.setRange(0,self.x/2)
 ##            self.projViewControl.lcd.display(20)
@@ -995,23 +1005,25 @@ class Example(QtGui.QMainWindow):
             element=self.imgProcessControl.combo1.currentIndex()
             projection = self.imgProcessControl.combo2.currentIndex()
             self.imgProcessImg=self.data[element, projection, : ,:]
-            self.imgProcess.projView.setImage(self.imgProcessImg)
+            self.imgProcess.view.projView.setImage(self.imgProcessImg)
+
 
       def imgProcessBoxSizeChange(self):
             xSize=self.imgProcessControl.xSize
             ySize=self.imgProcessControl.ySize
-            self.imgProcess.ROI.setSize([xSize, ySize])
-            self.imgProcess.ROI.setPos([int(round(self.projView.projView.iniX))-xSize/2,int(round(self.projView.projView.iniY))-ySize/2])
-            self.imgProcess.xSize=xSize
-            self.imgProcess.ySize=ySize
+            self.imgProcess.view.ROI.setSize([xSize, ySize])
+            self.imgProcess.view.ROI.setPos([int(round(self.imgProcess.view.projView.iniX))-xSize/2,int(round(self.imgProcess.view.projView.iniY))-ySize/2])
+            self.imgProcess.view.xSize=xSize
+            self.imgProcess.view.ySize=ySize
       def ipBg(self):
             element=self.imgProcessControl.combo1.currentIndex()
             projection = self.imgProcessControl.combo2.currentIndex()
             xSize=self.imgProcessControl.xSize
             ySize=self.imgProcessControl.ySize
-            img=self.data[element,projection, int(round(self.imgProcess.projView.iniX))-xSize/2:int(round(self.imgProcess.projView.iniX))+xSize/2,
-                          int(round(self.imgProcess.projView.iniY))-ySize/2:int(round(self.imgProcess.projView.iniY))+ySize/2]
-
+                  
+            img=self.data[element,projection, int(round(self.imgProcess.view.projView.iniX))-xSize/2:int(round(self.imgProcess.view.projView.iniX))+xSize/2,
+                          int(round(self.imgProcess.view.projView.iniY))-ySize/2:int(round(self.imgProcess.view.projView.iniY))+ySize/2]
+            #if self.imgProcess.projView.iniX-xSize/2<##$#$#$#$#$#$#$#$
             self.bg = np.average(img)
             print self.bg
       def ipDelHotspot(self):
@@ -1019,12 +1031,12 @@ class Example(QtGui.QMainWindow):
             projection = self.imgProcessControl.combo2.currentIndex()
             xSize=self.imgProcessControl.xSize
             ySize=self.imgProcessControl.ySize
-            img=self.data[element,projection, int(round(self.imgProcess.projView.iniX))-xSize/2:int(round(self.imgProcess.projView.iniX))+xSize/2,
-                          int(round(self.imgProcess.projView.iniY))-ySize/2:int(round(self.imgProcess.projView.iniY))+ySize/2]
-            self.data[element,projection, int(round(self.imgProcess.projView.iniX))-xSize/2:int(round(self.imgProcess.projView.iniX))+xSize/2,
-                          int(round(self.imgProcess.projView.iniY))-ySize/2:int(round(self.imgProcess.projView.iniY))+ySize/2]=ones(img.shape,dtype=img.dtype)*self.bg
+            img=self.data[element,projection, int(round(self.imgProcess.view.projView.iniX))-xSize/2:int(round(self.imgProcess.view.projView.iniX))+xSize/2,
+                          int(round(self.imgProcess.view.projView.iniY))-ySize/2:int(round(self.imgProcess.view.projView.iniY))+ySize/2]
+            self.data[element,projection, int(round(self.imgProcess.view.projView.iniX))-xSize/2:int(round(self.imgProcess.view.projView.iniX))+xSize/2,
+                          int(round(self.imgProcess.view.projView.iniY))-ySize/2:int(round(self.imgProcess.view.projView.iniY))+ySize/2]=ones(img.shape,dtype=img.dtype)*self.bg
 
-            self.imgProcess.projView.setImage(self.data[element,projection,:,:])
+            self.imgProcess.view.projView.setImage(self.data[element,projection,:,:])
       def ipNormalize(self):
             element=self.imgProcessControl.combo1.currentIndex()
             projection = self.imgProcessControl.combo2.currentIndex()
@@ -1042,18 +1054,39 @@ class Example(QtGui.QMainWindow):
             projection = self.imgProcessControl.combo2.currentIndex()
             xSize=self.imgProcessControl.xSize
             ySize=self.imgProcessControl.ySize
-            img=self.data[element,projection, int(round(self.imgProcess.projView.iniX))-xSize/2:int(round(self.imgProcess.projView.iniX))+xSize/2,
-                          int(round(self.imgProcess.projView.iniY))-ySize/2:int(round(self.imgProcess.projView.iniY))+ySize/2]
+            img=self.data[element,projection, int(round(self.imgProcess.view.projView.iniX))-xSize/2:int(round(self.imgProcess.view.projView.iniX))+xSize/2,
+                          int(round(self.imgProcess.view.projView.iniY))-ySize/2:int(round(self.imgProcess.view.projView.iniY))+ySize/2]
             print img.shape
             self.temp_data=zeros([len(self.channelname),self.projections,img.shape[0],img.shape[1]])
             print self.data.shape
             for i in arange(self.projections):
                   for j in arange(len(self.channelname)):
 
-                        self.temp_data[j,i,:,:]= self.data[j,i, int(round(self.imgProcess.projView.iniX))-xSize/2:int(round(self.imgProcess.projView.iniX))+xSize/2,
-                                int(round(self.imgProcess.projView.iniY))-ySize/2:int(round(self.imgProcess.projView.iniY))+ySize/2]
+                        self.temp_data[j,i,:,:]= self.data[j,i, int(round(self.imgProcess.view.projView.iniX))-xSize/2:int(round(self.imgProcess.view.projView.iniX))+xSize/2,
+                                int(round(self.imgProcess.view.projView.iniY))-ySize/2:int(round(self.imgProcess.view.projView.iniY))+ySize/2]
             print "done"
             self.data=self.temp_data
+
+
+      def gauss2D(self,shape=(3,3),sigma=0.5):
+            """
+            2D gaussian mask - should give the same result as MATLAB's
+            fspecial('gaussian',[shape],[sigma])
+            """
+            m,n = [(ss-1.)/2. for ss in shape]
+            y,x = np.ogrid[-m:m+1,-n:n+1]
+            h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
+            h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
+            sumh = h.sum()
+            if sumh != 0:
+              h /= sumh
+            return h
+      def gauss33(self):
+            result=gauss2D(shape=(3,3),sigma=1.3)
+            return result
+      def gauss55(self):
+            result=gauss2D(shape=(5,5),sigma=1.3)
+            return result
             
 #==========================
 ## Gaussian fit from wiki.scipy.org/Cookbook/FittingData
@@ -1107,6 +1140,7 @@ class Example(QtGui.QMainWindow):
             self.recon.btn.clicked.connect(self.reconstruct)
             self.recon.save.clicked.connect(self.saveRecTiff)
             self.recon.reconvalue=1
+            
 
 
       
@@ -1175,10 +1209,12 @@ class Example(QtGui.QMainWindow):
 
       def saveRecTiff(self):
             try:
+                  global debugging
                   self.savedir=QtGui.QFileDialog.getSaveFileName()
-                  print self.savedir
-                  
                   self.savedir=str(self.savedir)
+                  if self.savedir=="":
+                        raise IndexError
+                  print self.savedir
                   tomopy.xtomo_writer(self.d.data_recon,self.savedir,axis=0,digits=4)
             except IndexError:
                   print "type the header name"
@@ -1305,7 +1341,66 @@ class Example(QtGui.QMainWindow):
             except OSError:
                   print "no folder has been selected"
 
+      def openTiffFolder(self):
+            pass1= False
+            try:
+                  tiffFolderName = QtGui.QFileDialog.getExistingDirectory(self, "Open Tiff Folder",
+                                                                          QtCore.QDir.currentPath())
+                  file_name_array = [ f for f in os.listdir(tiffFolderName) if string.find(f,"tif")!=-1]
+                  file_name_array = [tiffFolderName + "/" + f for f in file_name_array]
 
+                  self.tiffNames = file_name_array
+
+                  pass1= True
+            except IndexError:
+                  print "no folder has been selected"
+            except OSError:
+                  print "no folder has been selected"
+            if pass1==True:
+                  try:
+                        angleTxt = QtGui.QFileDialog.getOpenFileName(self, "Open Angle Txt File",
+                                                                      QtCore.QDir.currentPath(),filter="txt (*.txt)")
+                        print str(angleTxt)
+                        self.angleTxt =angleTxt
+                        self.convertTiff2Array()
+                  except IndexError:
+                        print "no file has been selected"
+                  except OSError:
+                        print "no file has been selected"
+
+      def convertTiff2Array(self):
+            self.projections = len(self.tiffNames)
+            print self.tiffNames
+            self.y, self.x = np.asarray(Image.open(str(self.tiffNames[0])),dtype=float32).shape
+            self.channelname = list()
+            self.channelname.append("tiff")
+            self.channelname.append("dummy")
+            self.data =zeros([1,self.projections,self.y,self.x])
+            self.theta=zeros(self.projections)
+            f=open(str(self.angleTxt),'r')
+            read = f.readlines()
+            
+            for i in arange(self.projections):
+                  self.data[0,i,:,:]=np.asarray(Image.open(str(self.tiffNames[i])),dtype=float32)[...]
+                  self.theta = float(read[i])
+
+            self.p1=[100,100,self.data.shape[3]/2]
+
+            self.alignmentMenu.setEnabled(True)
+            self.tab_widget.setEnabled(True)
+            
+            self.oldData=zeros(self.data.shape)
+            self.oldData[...]=self.data[...]
+
+            self.showProjections()
+            self.showSinogram()
+            self.sinogram()
+            self.viewProjections()
+            self.runReconstruct()
+            self.showSaveHotSpotPos()
+            self.projView.hotSpotSetNumb=0
+            self.showImageProcess()
+            
       def convert2array(self):
             y=zeros(len(self.fileNames),dtype=bool)
             k=arange(y.shape[0])
@@ -1352,7 +1447,7 @@ class Example(QtGui.QMainWindow):
                         f = h5py.File(file_name,"r")
                         thetatemp=f["MAPS"]["extra_pvs_as_csv"][self.thetaPos]
 
-                        self.theta[i] = float(thetatemp[thetatemp.rfind(",")+3:])
+                        self.theta[i] = float(thetatemp[thetatemp.rfind(",")+1:])
                         
                         for j in arange(self.channels):
                               self.data[j,i,:,:]=f[self.ImageTag][self.dataTag][j,:,:-2]
@@ -1366,7 +1461,7 @@ class Example(QtGui.QMainWindow):
                         f = h5py.File(file_name,"r")
                         thetatemp=f["MAPS"]["extra_pvs_as_csv"][self.thetaPos]
 
-                        self.theta[i] = float(thetatemp[thetatemp.rfind(",")+3:])
+                        self.theta[i] = float(thetatemp[thetatemp.rfind(",")+1:])
                         
                         for j in arange(self.channels1):
                               self.data[j,i,:,:]=f[self.ImageTag][self.dataTag][j,:,:-2]
@@ -1406,7 +1501,7 @@ class Example(QtGui.QMainWindow):
             self.viewProjections()
             self.runReconstruct()
             self.showSaveHotSpotPos()
-            self.projView.hotSpotSetNumb=0
+            self.projView.view.hotSpotSetNumb=0
             self.showImageProcess()
 
 ##            self.theta=array([-75, -60, -57, -54, -51, -48, -42,-39, -36, -33,-30, -27, -24, -21, -18,
@@ -1766,11 +1861,11 @@ class QSelect4(QtGui.QWidget):
             self.combo2=QtGui.QComboBox(self)
             self.combo3=QtGui.QComboBox(self)
             self.lbl3 = QtGui.QLabel()
-            self.lbl3.setText("Set number of the hot spot group")
+            self.lbl3.setText("Set group number of the hot spot")
             for i in arange(5):
                   self.combo2.addItem(str(i+1))
-            self.btn=QtGui.QPushButton("Draw boxes")
-            self.btn2=QtGui.QPushButton("Draw -> Sino")
+            self.btn=QtGui.QPushButton("Hotspots to a line")
+            self.btn2=QtGui.QPushButton("Hotspots to a sine curve")
 ##            self.btn = QtGui.QPushButton('Click2')
 ##            self.btn.setText("Sinogram")
 ##            self.btn2 = QtGui.QPushButton("shift data")
@@ -1805,6 +1900,8 @@ class imageProcess(QtGui.QWidget):
             self.delHotspotBtn = QtGui.QPushButton("Delete HotSpot")
             self.normalizeBtn = QtGui.QPushButton("Normalize")
             self.cutBtn = QtGui.QPushButton("Cut")
+            self.gaussian33Btn = QtGui.QPushButton("3*3 gaussian filter")
+            self.gaussian55Btn = QtGui.QPushButton("5*5 gaussian filter")
             self.xUpBtn=QtGui.QPushButton("x: +")
             self.xUpBtn.clicked.connect(self.xUp)
             self.xDownBtn = QtGui.QPushButton("x: -")
@@ -1860,10 +1957,24 @@ class imageProcess(QtGui.QWidget):
             vb3.addWidget(self.combo2)
             vb3.addWidget(xSG)
             vb3.addWidget(ySG)
-            vb3.addWidget(self.bgBtn)
-            vb3.addWidget(self.delHotspotBtn)
-            vb3.addWidget(self.normalizeBtn)
-            vb3.addWidget(self.cutBtn)
+
+            hb5=QtGui.QHBoxLayout()
+            hb5.addWidget(self.bgBtn)
+            hb5.addWidget(self.delHotspotBtn)
+            
+            hb6=QtGui.QHBoxLayout()
+            hb6.addWidget(self.normalizeBtn)
+            hb6.addWidget(self.cutBtn)
+            
+            hb7=QtGui.QHBoxLayout()
+            hb7.addWidget(self.gaussian33Btn)
+            hb7.addWidget(self.gaussian55Btn)
+            
+            vb3.addLayout(hb5)
+            vb3.addLayout(hb6)
+            vb3.addLayout(hb7)
+ 
+
             self.setLayout(vb3)
       def changeXSize(self):
             self.xSize=int(self.xSizeTxt.text())
@@ -1977,6 +2088,11 @@ class IView2(pg.GraphicsLayoutWidget):
             self.ROI = pg.ROI([self.projView.iniX,self.projView.iniY],[20,20])
             self.p1.addItem(self.projView)
             self.p1.addItem(self.ROI)
+
+##            self.hist = pg.HistogramLUTItem()
+##            self.hist.setImageItem(self.projView)
+##            self.addItem(self.hist)
+      
       def mouseReleaseEvent(self,ev):
             self.ROI.setPos([self.projView.iniX-self.xSize/2,self.projView.iniY-self.ySize/2])
 
@@ -2013,6 +2129,24 @@ class IView2(pg.GraphicsLayoutWidget):
 ##            self.copy[self.numb2*10:self.numb2*10+10,:]=np.roll(self.copy[self.numb2*10:self.numb2*10+10,:],self.shiftnumb,axis=1)
 ##      def getShape(self):
 ##            self.regShift=zeros(self.getProcessedImage().shape[0],dtype=int)
+
+class IView3(QtGui.QWidget):
+      def __init__(self):
+            super(IView3, self).__init__()
+        
+            self.initUI()
+
+      def initUI(self):
+            self.show()
+
+            hb1=QtGui.QHBoxLayout()
+            self.view=IView2()
+            self.hist=pg.HistogramLUTWidget()
+            self.hist.setImageItem(self.view.projView)
+            hb1.addWidget(self.view)
+            hb1.addWidget(self.hist,10)
+            self.setLayout(hb1)
+
             
 class Manual(QtGui.QWidget):
       def __init__(self):
@@ -2043,6 +2177,19 @@ def main2():
                                 +"autocorrection_sinogram/mod_sino.tif"),dtype=np.float32)     
       app = QtGui.QApplication(sys.argv)
       ex = Example2("why")
+      sys.exit(app.exec_())
+
+def main3():
+      data = np.random.normal(size=(100, 200))
+      data[20:80, 20:80] += 2.
+      data = pg.gaussianFilter(data, (3, 3))
+      data += np.random.normal(size=(100, 200)) * 0.1
+      app= QtGui.QApplication(sys.argv)
+
+      ex = IView3()
+      ex.a.projView.setImage(data)
+      ex.b.setImageItem(ex.a.projView)
+      print dir(ex.b)
       sys.exit(app.exec_())
 
 if __name__ == '__main__':
