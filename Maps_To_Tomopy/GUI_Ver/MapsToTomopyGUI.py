@@ -21,7 +21,7 @@ import pyqtgraph as pg
 from PySide import QtGui, QtCore
 from pyqtgraph import QtGui, QtCore
 import h5py
-import tomopy
+#import tomopy
 #import subpixelshift
 #from subpixelshift import *
 
@@ -672,7 +672,7 @@ class Example(QtGui.QMainWindow):
 
       def nextHotSpotPos(self):
             #self.projView.hotSpotNumb=self.projViewControl.sld.value()
-            self.projView.view.projView.setImage(self.data[self.projViewElement,self.projView.hotSpotNumb,:,:])
+            self.projView.view.projView.setImage(self.data[self.projViewElement,self.projView.view.hotSpotNumb,:,:])
 
             
       def saveHotSpotPos(self):
@@ -1402,7 +1402,7 @@ class Example(QtGui.QMainWindow):
             self.viewProjections()
             self.runReconstruct()
             self.showSaveHotSpotPos()
-            self.projView.hotSpotSetNumb=0
+            self.projView.view.hotSpotSetNumb=0
             self.showImageProcess()
             
       def convert2array(self):
