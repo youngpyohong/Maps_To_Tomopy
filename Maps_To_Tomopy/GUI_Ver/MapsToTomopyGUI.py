@@ -70,6 +70,9 @@ class Example(QtGui.QMainWindow):
             selectFilesAction=QtGui.QAction('Select Files',self)
             selectFilesAction.triggered.connect(self.selectFiles)
 
+            saveThetaTxtAction = QtGui.QAction("Save Theta Postion as txt",self)
+            saveThetaTxtAction.triggered.connect(self.saveThetaTxt)
+
             convertAction = QtGui.QAction('Save data in memory', self)
             convertAction.triggered.connect(self.convert)
 
@@ -181,6 +184,7 @@ class Example(QtGui.QMainWindow):
 
             self.afterConversionMenu = menubar.addMenu('After saving data in memory')
             self.afterConversionMenu.addAction(saveImageAction)
+            self.afterConversionMenu.addAction(saveThetaTxtAction)
             #self.afterConversionMenu.addAction(selectElementAction)
             self.afterConversionMenu.addAction(showSinogramAction)
             self.afterConversionMenu.addAction(runReconstructAction)
@@ -988,8 +992,8 @@ class Example(QtGui.QMainWindow):
             self.imgProcessControl.delHotspotBtn.clicked.connect(self.ipDelHotspot)
             self.imgProcessControl.normalizeBtn.clicked.connect(self.ipNormalize)
             self.imgProcessControl.cutBtn.clicked.connect(self.ipCut)
-            self.imgProcessControl.gaussian33Btn.clicked.connect(self.gaussian33)
-            self.imgProcessControl.gaussian33Btn.clicked.connect(self.gaussian55)
+            self.imgProcessControl.gaussian33Btn.clicked.connect(self.gauss33)
+            self.imgProcessControl.gaussian33Btn.clicked.connect(self.gauss55)
             
 ##            self.projViewControl.sld.setValue(20)
 ##            self.projViewControl.sld.setRange(0,self.x/2)
@@ -1382,8 +1386,8 @@ class Example(QtGui.QMainWindow):
             
             for i in arange(self.projections):
                   self.data[0,i,:,:]=np.asarray(Image.open(str(self.tiffNames[i])),dtype=float32)[...]
-                  self.theta = float(read[i])
-
+                  thetaPos=read[i].find(",")
+                  self.theta = float(read[i][thetaPos+1:])
             self.p1=[100,100,self.data.shape[3]/2]
 
             self.alignmentMenu.setEnabled(True)
@@ -1513,6 +1517,22 @@ class Example(QtGui.QMainWindow):
 #            yy[isinf(yy)]=1
 #            pg.image(yy[37,:,:,:])
 
+      def saveThetaTxt(self):
+            try:
+                  self.alignFileName = QtGui.QFileDialog.getSaveFileName()
+                  if string.rfind(str(self.alignFileName),".txt")==-1:
+                        self.alignFileName=str(self.alignFileName)+".txt"
+                  print str(self.alignFileName)
+                  f=open(self.alignFileName,"w")
+                  for i in arange(self.projections):
+                        onlyfilename=self.selectedFiles[i].rfind("/")
+                        print self.selectedFiles[i]
+                        f.writelines(self.selectedFiles[i][onlyfilename+1:-3]+", "+str(self.theta[i])+"\n")
+                        
+                  f.close()
+            except IOError:
+                  print "choose file please"
+            
 
 #####!!!! just temp need to be fixed
       def saveImage(self):
@@ -1896,12 +1916,12 @@ class imageProcess(QtGui.QWidget):
       def initUI(self):
             self.xSize = 20
             self.ySize = 20
-            self.bgBtn=QtGui.QPushButton("Get Background Value")
-            self.delHotspotBtn = QtGui.QPushButton("Delete HotSpot")
+            self.bgBtn=QtGui.QPushButton("Bg Value")
+            self.delHotspotBtn = QtGui.QPushButton("Delete HS")
             self.normalizeBtn = QtGui.QPushButton("Normalize")
             self.cutBtn = QtGui.QPushButton("Cut")
-            self.gaussian33Btn = QtGui.QPushButton("3*3 gaussian filter")
-            self.gaussian55Btn = QtGui.QPushButton("5*5 gaussian filter")
+            self.gaussian33Btn = QtGui.QPushButton("3*3 gauss")
+            self.gaussian55Btn = QtGui.QPushButton("5*5 gauss")
             self.xUpBtn=QtGui.QPushButton("x: +")
             self.xUpBtn.clicked.connect(self.xUp)
             self.xDownBtn = QtGui.QPushButton("x: -")
@@ -1959,16 +1979,16 @@ class imageProcess(QtGui.QWidget):
             vb3.addWidget(ySG)
 
             hb5=QtGui.QHBoxLayout()
-            hb5.addWidget(self.bgBtn)
-            hb5.addWidget(self.delHotspotBtn)
+            hb5.addWidget(self.bgBtn,stretch =0 )
+            hb5.addWidget(self.delHotspotBtn,stretch =0)
             
             hb6=QtGui.QHBoxLayout()
-            hb6.addWidget(self.normalizeBtn)
-            hb6.addWidget(self.cutBtn)
+            hb6.addWidget(self.normalizeBtn,stretch =0)
+            hb6.addWidget(self.cutBtn,stretch =0)
             
             hb7=QtGui.QHBoxLayout()
-            hb7.addWidget(self.gaussian33Btn)
-            hb7.addWidget(self.gaussian55Btn)
+            hb7.addWidget(self.gaussian33Btn,stretch =0)
+            hb7.addWidget(self.gaussian55Btn,stretch =0)
             
             vb3.addLayout(hb5)
             vb3.addLayout(hb6)
