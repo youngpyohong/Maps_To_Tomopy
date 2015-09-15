@@ -21,7 +21,7 @@ import pyqtgraph as pg
 from PySide import QtGui, QtCore
 from pyqtgraph import QtGui, QtCore
 import h5py
-import tomopy
+#import tomopy
 import time
 #import subpixelshift
 #from subpixelshift import *
@@ -289,7 +289,8 @@ class Example(QtGui.QMainWindow):
 
       def createSinoWidget(self):
             self.sino = QSelect2()
-            self.sinoView = IView()
+            self.sinoView = IView3()
+            self.sinoView.view.ROI.setVisible(False)
 
             sinoBox = QtGui.QHBoxLayout()
             sinoBox.addWidget(self.sino)
@@ -685,7 +686,7 @@ class Example(QtGui.QMainWindow):
       def hotSpotProjChanged(self):
             self.projView.view.hotSpotNumb=self.projView.sld.value()
             self.projView.view.projView.setImage(self.data[self.projViewElement,self.projView.view.hotSpotNumb,:,:])
-            self.projView.view.setScale(1,1)
+            self.projView.view.scale(1,1)
 #########
       
       def boxSizeChange(self):
@@ -1711,9 +1712,11 @@ class Example(QtGui.QMainWindow):
 
             sinofig=self.sinogramData
             self.sinogramData[isinf(self.sinogramData)]=0.001
-            self.sinoView.setImage(self.sinogramData)
-            self.sinoView.getShape()
-            self.sinoView.setWindowTitle("Sinogram "+self.sino.combo.itemText(self.sinoelement)+" "+str(self.sino.sld.value()))
+            self.sinoView.view.projView.setImage(self.sinogramData)
+            self.sinoView.view.projView.scale(1,1)
+            
+            #self.sinoView.getShape()
+            #self.sinoView.setWindowTitle("Sinogram "+self.sino.combo.itemText(self.sinoelement)+" "+str(self.sino.sld.value()))
 
       def saveSinogram(self):
             j=Image.fromarray(self.sinogramData.astype(np.float32))
@@ -1727,7 +1730,7 @@ class Example(QtGui.QMainWindow):
       def updateImages(self):
             self.projView.view.projView.update()
             self.imgProcess.view.projView.updateImage()
-            self.sinoView.updateImage()
+            self.sinoView.view.projView.updateImage()
             self.projectionView.updateImage()
 
             
@@ -1923,25 +1926,16 @@ class QSelect4(QtGui.QWidget):
         
       def initUI(self):
  
+
+
             self.sld=QtGui.QSlider(QtCore.Qt.Horizontal, self)
             self.lcd=QtGui.QLCDNumber(self)
-            hb1=QtGui.QVBoxLayout()
-            hb2=QtGui.QVBoxLayout()
-            self.lbl11=QtGui.QLabel()
-            self.lbl11.setText("Current Position")
-            self.lbl12=QtGui.QLabel()
-            self.lbl21=QtGui.QLabel()
-            self.lbl21.setText("Total Position")
-            self.lbl22=QtGui.QLabel()
-            hb1.addWidget(self.lbl11)
-            hb1.addWidget(self.lbl12)
-            hb2.addWidget(self.lbl21)
-            hb2.addWidget(self.lbl22)
             self.combo = QtGui.QComboBox(self)
             self.combo2=QtGui.QComboBox(self)
             self.combo3=QtGui.QComboBox(self)
+            self.lbl1 = QtGui.QLabel("Set the size of the hotspot")
             self.lbl3 = QtGui.QLabel()
-            self.lbl3.setText("Set group number of the hot spot")
+            self.lbl3.setText("Set a group number of the hot spot")
             for i in arange(5):
                   self.combo2.addItem(str(i+1))
             self.btn=QtGui.QPushButton("Hotspots to a line")
@@ -1955,13 +1949,17 @@ class QSelect4(QtGui.QWidget):
             vb.addWidget(self.combo)
 ##            vb.addWidget(self.btn)
 ##            vb.addWidget(self.btn2)
+
+            vb.addWidget(self.lbl1)
             vb.addWidget(self.lcd)
             vb.addWidget(self.sld)
             vb.addWidget(self.combo3)
+
+            hb1=QtGui.QVBoxLayout()
+            hb1.addWidget(self.lbl3,0)
+            hb1.addWidget(self.combo2)
+
             vb.addLayout(hb1)
-            vb.addLayout(hb2)
-            vb.addWidget(self.lbl3)
-            vb.addWidget(self.combo2)
             vb.addWidget(self.btn)
             vb.addWidget(self.btn2)
 ##            vb.addWidget(self.lbl)
